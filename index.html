@@ -430,6 +430,87 @@ footer b{ color:var(--text); }
     return r === 'Oba' || r === region;
   }
 
+  // ---------- Canonical product identity (search-view grouping) ----------
+  // The same real product often exists as separate raw PRODUCTS entries per supplier
+  // (different literal names — "łopatka wieprzowa", "BP Łopatka wieprzowa b/k ok.4kg
+  // [PROMOCJA]", "Łopatka wp b/k 4D" are all the same "ŁOPATKA"). COMPARE_DATA already
+  // carries analiza cenowa's own curated product identity (its "Mięso/Warzywa - do druku"
+  // rows). Reuse it here to group general-search results the same way "Porównaj
+  // mięso/warzywa" already does, instead of one card per raw supplier-name variant.
+  //
+  // Step 1: "Mięso - do druku" lists several products twice — once in PRODUKTY TOP, again
+  // in CENY STANDARD — with identical prices per supplier. Merge those duplicate rows into
+  // one canonical row per real product FIRST (by exact price-vector match), before ever
+  // touching raw PRODUCTS — otherwise TOP and STANDARD each independently claim raw
+  // entries and can split one real product into two different canonical groups depending
+  // on which row a given supplier's price happens to disambiguate through.
+  var CANONICAL_ROWS = []; // [{ key, name, unit, category, prices: {supplier: price} }]
+  Object.keys(COMPARE_DATA).forEach(function(category){
+    var data = COMPARE_DATA[category];
+    var suppliers = data.suppliers;
+    data.items.forEach(function(item){
+      if(item.section) return;
+      var sig = item.prices.map(function(p){ return p === null ? 'x' : p.toFixed(2); }).join('|');
+      var existing = CANONICAL_ROWS.filter(function(r){ return r.category === category && r.sig === sig; })[0];
+      if(existing) return; // duplicate row (TOP/STANDARD pair) — already covered
+      var priceBySupplier = {};
+      suppliers.forEach(function(s, i){ if(item.prices[i] !== null) priceBySupplier[s] = item.prices[i]; });
+      CANONICAL_ROWS.push({
+        key: category + '::' + item.name, name: item.name, unit: item.unit, category: category,
+        sig: sig, prices: priceBySupplier
+      });
+    });
+  });
+
+  // Step 2: link each raw PRODUCTS entry to its canonical row by matching (supplier, price)
+  // exactly — only when unambiguous (exactly one raw candidate, or exactly one whose raw
+  // name matches the canonical row's name verbatim), so a coincidental same price never
+  // merges two genuinely different products.
+  var PRODUCT_ALIAS = {};     // rawKey ("name||qualifier") -> canonical group key
+  var CANONICAL_PRODUCT = {}; // canonical group key -> synthetic {name, qualifier, unit, category}
+  function rawKeyOf(p){ return p.name + '||' + p.qualifier; }
+  CANONICAL_ROWS.forEach(function(row){
+    CANONICAL_PRODUCT[row.key] = { name: row.name, qualifier: '', unit: row.unit, category: row.category };
+    Object.keys(row.prices).forEach(function(supplier){
+      var price = row.prices[supplier];
+      var candidates = PRODUCTS.filter(function(p){
+        return p.category === row.category && p.offers.some(function(o){
+          return o.supplier === supplier && Math.abs(o.price - price) < 0.005;
+        });
+      });
+      var target = null;
+      if(candidates.length === 1){
+        target = candidates[0];
+      } else if(candidates.length > 1){
+        var exact = candidates.filter(function(p){ return p.name === row.name; });
+        if(exact.length === 1) target = exact[0];
+      }
+      if(target){
+        var k = rawKeyOf(target);
+        if(!PRODUCT_ALIAS[k]) PRODUCT_ALIAS[k] = row.key;
+      }
+    });
+  });
+  function canonicalKeyFor(p){ return PRODUCT_ALIAS[rawKeyOf(p)] || rawKeyOf(p); }
+  function canonicalDisplayProduct(key, fallback){ return CANONICAL_PRODUCT[key] || fallback; }
+  var CANONICAL_ROW_BY_KEY = {};
+  CANONICAL_ROWS.forEach(function(row){ CANONICAL_ROW_BY_KEY[row.key] = row; });
+
+  // Two raw PRODUCTS entries that both alias into the same canonical group can carry a
+  // duplicate (or conflicting) offer for the same supplier — dedupe per supplier, preferring
+  // whichever offer's price matches the verified analiza cenowa price for that supplier when
+  // known, else the first one encountered.
+  function dedupeOffersBySupplier(offers, groupKey){
+    var canonicalPrices = (CANONICAL_ROW_BY_KEY[groupKey] || {}).prices || {};
+    var bySupplier = {}, order = [];
+    offers.forEach(function(o){
+      if(!(o.supplier in bySupplier)){ bySupplier[o.supplier] = o; order.push(o.supplier); return; }
+      var known = canonicalPrices[o.supplier];
+      if(known !== undefined && Math.abs(o.price - known) < 0.005) bySupplier[o.supplier] = o;
+    });
+    return order.map(function(s){ return bySupplier[s]; });
+  }
+
   // ---------- State ----------
   var state = {
     region: 'Północ',
@@ -482,15 +563,29 @@ footer b{ color:var(--text); }
       return productMatchesQuery(p, state.query) ||
         (supplierMatches.length > 0 && p.offers.some(function(o){ return supplierMatches.indexOf(o.supplier) !== -1; }));
     });
-    // apply region filter to offers, drop products with zero matching offers
-    return list.map(function(p){
+    // Group by canonical product identity (see canonicalKeyFor above) so the same real
+    // product from different suppliers — even under different raw names — lands in one
+    // card, same as "Porównaj mięso/warzywa" already does, instead of one card per raw name.
+    var groupsMap = {}, order = [];
+    list.forEach(function(p){
       var byName = productMatchesQuery(p, state.query);
       var offers = p.offers.filter(function(o){
         if(!offerMatchesRegion(o, state.region)) return false;
         return byName || supplierMatches.indexOf(o.supplier) !== -1;
       });
-      return { product:p, offers: offers.slice().sort(function(a,b){ return a.price - b.price; }) };
-    }).filter(function(g){ return g.offers.length > 0; })
+      if(offers.length === 0) return;
+      var key = canonicalKeyFor(p);
+      if(!groupsMap[key]){
+        groupsMap[key] = { key: key, product: canonicalDisplayProduct(key, p), offers: [] };
+        order.push(key);
+      }
+      groupsMap[key].offers = groupsMap[key].offers.concat(offers);
+    });
+    return order.map(function(key){
+      var g = groupsMap[key];
+      g.offers = dedupeOffersBySupplier(g.offers, key).sort(function(a,b){ return a.price - b.price; });
+      return g;
+    })
       // Wyniki posortowane od najtańszej oferty, jak w analiza cenowa (Wyszukiwarka).
       .sort(function(a,b){ return a.offers[0].price - b.offers[0].price; });
   }
@@ -563,7 +658,7 @@ footer b{ color:var(--text); }
     var nameHtml = p.name + (p.qualifier ? ' <span class="qualifier">' + p.qualifier + '</span>' : '');
     var rows = group.offers.map(function(o,i){ return offerRowHtml(p, o, i === 0); }).join('');
     return (
-      '<div class="product-group" data-pidx="' + PRODUCTS.indexOf(p) + '">' +
+      '<div class="product-group" data-key="' + group.key + '">' +
         '<div class="product-head"><div><div class="product-name">' + nameHtml + '</div>' +
         '<div class="product-unit">cena za ' + p.unit + '</div></div>' +
         '<div class="offer-count">' + group.offers.length + (group.offers.length === 1 ? ' oferta' : ' oferty') + '</div></div>' +
@@ -727,10 +822,10 @@ footer b{ color:var(--text); }
     } else {
       // bind add-to-basket buttons (search results, card layout)
       viewRoot.querySelectorAll('.product-group').forEach(function(groupEl){
-        var pidx = parseInt(groupEl.getAttribute('data-pidx'), 10);
-        var product = PRODUCTS[pidx];
+        var key = groupEl.getAttribute('data-key');
+        var group = groups.filter(function(g){ return g.key === key; })[0];
+        var product = group.product;
         var rows = groupEl.querySelectorAll('.offer-row');
-        var group = groups.filter(function(g){ return g.product === product; })[0];
         rows.forEach(function(rowEl, i){
           var offer = group.offers[i];
           var minusBtn = rowEl.querySelector('.qty-minus');
