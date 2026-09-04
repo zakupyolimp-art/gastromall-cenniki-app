@@ -183,24 +183,49 @@ main{ flex:1; padding:4px 18px 28px; display:flex; flex-direction:column; gap:18
 .price-per{ font-size:10.5px; color:var(--text-muted); font-weight:500; }
 
 /* ---------- Comparison-table layout (Porównaj mięso/warzywa) ---------- */
-.product-group.compare .offer-rows{
-  display:flex; overflow-x:auto; gap:8px; padding:10px 14px 14px;
-  -webkit-overflow-scrolling:touch;
+.compare-table-wrap{
+  overflow:auto; -webkit-overflow-scrolling:touch;
+  border:1px solid var(--border); border-radius:14px; background:var(--surface);
+  max-height:calc(100vh - 210px);
 }
-.product-group.compare .offer-row{
-  flex:0 0 122px; display:flex; flex-direction:column; align-items:stretch; gap:8px;
-  border:1px solid var(--border); border-radius:12px; padding:10px; background:var(--surface);
+table.compare-table{ border-collapse:separate; border-spacing:0; width:100%; }
+.compare-table th, .compare-table td{
+  padding:8px 8px; border-bottom:1px solid var(--border); text-align:center; font-size:11.5px;
 }
-.product-group.compare .offer-row.best{ background:var(--best-bg); border-color:var(--best); }
-.product-group.compare .offer-left{ flex-direction:column; align-items:flex-start; gap:4px; }
-.product-group.compare .supplier-dot{ display:none; }
-.product-group.compare .supplier-name{ font-size:12px; white-space:normal; line-height:1.25; }
-.product-group.compare .offer-tags{ margin-top:0; }
-.product-group.compare .offer-main{ flex-direction:column; align-items:stretch; gap:8px; }
-.product-group.compare .offer-price{ text-align:left; }
-.product-group.compare .price-value{ font-size:16px; }
-.product-group.compare .qty-stepper{ margin-left:0; justify-content:space-between; }
-.product-group.compare .qty-input{ flex:1; }
+.compare-table thead th{
+  position:sticky; top:0; z-index:2; background:var(--chip-bg); color:var(--text-muted);
+  font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.03em;
+  white-space:normal; line-height:1.25; padding:8px 6px;
+}
+.compare-table th:first-child, .compare-table td:first-child{
+  position:sticky; left:0; z-index:1; background:var(--surface); text-align:left;
+  min-width:132px; max-width:150px; white-space:normal; line-height:1.3;
+  box-shadow:1px 0 0 var(--border);
+}
+.compare-table thead th:first-child{ z-index:3; background:var(--chip-bg); }
+.compare-table td.index-cell{ font-weight:600; color:var(--text); font-size:12px; }
+.compare-table td.index-cell .row-unit{ display:block; font-weight:500; color:var(--text-muted); font-size:10px; margin-top:1px; }
+.compare-table td.price-cell{ min-width:88px; }
+.compare-table td.empty-cell{ color:var(--text-muted); min-width:88px; }
+.compare-table .cell-price{
+  font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums;
+}
+.compare-table td.price-cell.best{ background:var(--best-bg); border-radius:0; }
+.compare-table td.price-cell.best .cell-price{ color:var(--best); font-weight:700; }
+.compare-table .cell-promo{ font-size:9px; font-weight:700; color:var(--promo); text-transform:uppercase; letter-spacing:.02em; margin-top:1px; }
+.compare-table .cell-stepper{
+  display:flex; align-items:center; justify-content:center; gap:3px; margin-top:5px;
+}
+.compare-table .cell-stepper .qty-btn{
+  width:20px; height:20px; border-radius:6px; border:1px solid var(--border); background:var(--surface);
+  color:var(--text); font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; flex:none;
+}
+.compare-table td.price-cell.best .cell-stepper .qty-btn{ border-color:var(--best); color:var(--best); }
+.compare-table .cell-stepper .qty-btn:disabled{ opacity:0.35; }
+.compare-table .cell-stepper .qty-input{
+  width:26px; height:20px; border:1px solid var(--border); border-radius:6px; text-align:center;
+  font-size:11px; font-family:'IBM Plex Mono', monospace; background:var(--surface); color:var(--text); padding:0;
+}
 
 .add-btn{
   flex:none; width:26px; height:26px; border-radius:8px; border:1px solid var(--border);
@@ -483,19 +508,63 @@ footer b{ color:var(--text); }
     );
   }
 
-  function groupHtml(group, compare){
+  function groupHtml(group){
     var p = group.product;
     var nameHtml = p.name + (p.qualifier ? ' <span class="qualifier">' + p.qualifier + '</span>' : '');
     var rows = group.offers.map(function(o,i){ return offerRowHtml(p, o, i === 0); }).join('');
-    if(compare) rows = '<div class="offer-rows">' + rows + '</div>';
     return (
-      '<div class="product-group' + (compare ? ' compare' : '') + '" data-pidx="' + PRODUCTS.indexOf(p) + '">' +
+      '<div class="product-group" data-pidx="' + PRODUCTS.indexOf(p) + '">' +
         '<div class="product-head"><div><div class="product-name">' + nameHtml + '</div>' +
         '<div class="product-unit">cena za ' + p.unit + '</div></div>' +
         '<div class="offer-count">' + group.offers.length + (group.offers.length === 1 ? ' oferta' : ' oferty') + '</div></div>' +
         rows +
       '</div>'
     );
+  }
+
+  // ---------- Comparison-table (Porównaj mięso/warzywa): index + kontrahenci w kolumnach ----------
+  function compareSuppliers(groups){
+    var seen = {}, list = [];
+    groups.forEach(function(g){
+      g.offers.forEach(function(o){
+        if(!seen[o.supplier]){ seen[o.supplier] = true; list.push(o.supplier); }
+      });
+    });
+    return list.sort(function(a,b){ return a.localeCompare(b, 'pl'); });
+  }
+
+  function compareCellHtml(product, group, supplier){
+    var offer = group.offers.filter(function(o){ return o.supplier === supplier; })[0];
+    if(!offer) return '<td class="empty-cell">—</td>';
+    var isBest = group.offers.length > 0 && Math.abs(offer.price - group.offers[0].price) < 1e-9;
+    var qty = getQty(supplier, product);
+    return (
+      '<td class="price-cell' + (isBest ? ' best' : '') + '" data-supplier="' + supplier + '">' +
+        '<div class="cell-price">' + fmt(offer.price) + '</div>' +
+        (offer.promo ? '<div class="cell-promo">Promocja</div>' : '') +
+        '<div class="cell-stepper">' +
+          '<button class="qty-btn qty-minus"' + (qty === 0 ? ' disabled' : '') + '>−</button>' +
+          '<input class="qty-input" type="number" inputmode="numeric" min="0" value="' + qty + '">' +
+          '<button class="qty-btn qty-plus">+</button>' +
+        '</div>' +
+      '</td>'
+    );
+  }
+
+  function compareTableHtml(groups){
+    var suppliers = compareSuppliers(groups);
+    if(suppliers.length === 0) return emptyStateHtml();
+    var thead = '<thead><tr><th>Produkt</th>' +
+      suppliers.map(function(s){ return '<th>' + s + '</th>'; }).join('') + '</tr></thead>';
+    var tbody = '<tbody>' + groups.map(function(g){
+      var p = g.product;
+      var nameHtml = p.name + (p.qualifier ? ' <span class="qualifier">' + p.qualifier + '</span>' : '');
+      return '<tr data-pidx="' + PRODUCTS.indexOf(p) + '">' +
+        '<td class="index-cell">' + nameHtml + '<span class="row-unit">cena za ' + p.unit + '</span></td>' +
+        suppliers.map(function(s){ return compareCellHtml(p, g, s); }).join('') +
+      '</tr>';
+    }).join('') + '</tbody>';
+    return '<div class="compare-table-wrap"><table class="compare-table">' + thead + tbody + '</table></div>';
   }
 
   function emptyStateHtml(){
@@ -530,42 +599,72 @@ footer b{ color:var(--text); }
     var html = '<div class="results-meta">';
     if(showBack) html += backBtnHtml;
     html += '<div class="results-meta-row"><h1>' + title + '</h1><span class="meta-count">' + metaCount + '</span></div></div>';
+    var compareMode = state.mode === 'category';
     html += '<main>';
     if(groups.length === 0){
       html += emptyStateHtml();
+    } else if(compareMode){
+      html += compareTableHtml(groups);
     } else {
-      var compareMode = state.mode === 'category';
-      html += groups.map(function(g){ return groupHtml(g, compareMode); }).join('');
+      html += groups.map(groupHtml).join('');
     }
     html += '</main>';
 
     viewRoot.innerHTML = html;
 
-    // bind add-to-basket buttons
-    viewRoot.querySelectorAll('.product-group').forEach(function(groupEl){
-      var pidx = parseInt(groupEl.getAttribute('data-pidx'), 10);
-      var product = PRODUCTS[pidx];
-      var rows = groupEl.querySelectorAll('.offer-row');
-      var group = groups.filter(function(g){ return g.product === product; })[0];
-      rows.forEach(function(rowEl, i){
-        var offer = group.offers[i];
-        var minusBtn = rowEl.querySelector('.qty-minus');
-        var plusBtn = rowEl.querySelector('.qty-plus');
-        var input = rowEl.querySelector('.qty-input');
+    if(compareMode){
+      // bind qty steppers inside comparison-table cells
+      viewRoot.querySelectorAll('.compare-table tbody tr').forEach(function(rowEl){
+        var pidx = parseInt(rowEl.getAttribute('data-pidx'), 10);
+        var product = PRODUCTS[pidx];
+        var group = groups.filter(function(g){ return g.product === product; })[0];
+        rowEl.querySelectorAll('td.price-cell').forEach(function(cellEl){
+          var supplier = cellEl.getAttribute('data-supplier');
+          var offer = group.offers.filter(function(o){ return o.supplier === supplier; })[0];
+          var minusBtn = cellEl.querySelector('.qty-minus');
+          var plusBtn = cellEl.querySelector('.qty-plus');
+          var input = cellEl.querySelector('.qty-input');
 
-        function apply(newQty){
-          newQty = Math.max(0, Math.round(Number(newQty) || 0));
-          setQty(product, offer, newQty);
-          input.value = newQty;
-          minusBtn.disabled = newQty === 0;
-        }
+          function apply(newQty){
+            newQty = Math.max(0, Math.round(Number(newQty) || 0));
+            setQty(product, offer, newQty);
+            input.value = newQty;
+            minusBtn.disabled = newQty === 0;
+          }
 
-        plusBtn.addEventListener('click', function(){ apply((parseInt(input.value,10) || 0) + 1); });
-        minusBtn.addEventListener('click', function(){ apply((parseInt(input.value,10) || 0) - 1); });
-        input.addEventListener('change', function(){ apply(input.value); });
-        input.addEventListener('blur', function(){ apply(input.value); });
+          plusBtn.addEventListener('click', function(){ apply((parseInt(input.value,10) || 0) + 1); });
+          minusBtn.addEventListener('click', function(){ apply((parseInt(input.value,10) || 0) - 1); });
+          input.addEventListener('change', function(){ apply(input.value); });
+          input.addEventListener('blur', function(){ apply(input.value); });
+        });
       });
-    });
+    } else {
+      // bind add-to-basket buttons (search results, card layout)
+      viewRoot.querySelectorAll('.product-group').forEach(function(groupEl){
+        var pidx = parseInt(groupEl.getAttribute('data-pidx'), 10);
+        var product = PRODUCTS[pidx];
+        var rows = groupEl.querySelectorAll('.offer-row');
+        var group = groups.filter(function(g){ return g.product === product; })[0];
+        rows.forEach(function(rowEl, i){
+          var offer = group.offers[i];
+          var minusBtn = rowEl.querySelector('.qty-minus');
+          var plusBtn = rowEl.querySelector('.qty-plus');
+          var input = rowEl.querySelector('.qty-input');
+
+          function apply(newQty){
+            newQty = Math.max(0, Math.round(Number(newQty) || 0));
+            setQty(product, offer, newQty);
+            input.value = newQty;
+            minusBtn.disabled = newQty === 0;
+          }
+
+          plusBtn.addEventListener('click', function(){ apply((parseInt(input.value,10) || 0) + 1); });
+          minusBtn.addEventListener('click', function(){ apply((parseInt(input.value,10) || 0) - 1); });
+          input.addEventListener('change', function(){ apply(input.value); });
+          input.addEventListener('blur', function(){ apply(input.value); });
+        });
+      });
+    }
 
     var back = document.getElementById('backToSearch');
     if(back) back.addEventListener('click', function(){
