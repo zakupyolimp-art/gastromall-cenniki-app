@@ -188,47 +188,47 @@ main{ flex:1; padding:4px 18px 28px; display:flex; flex-direction:column; gap:18
   border:1px solid var(--border); border-radius:14px; background:var(--surface);
   max-height:calc(100vh - 210px);
 }
-table.compare-table{ border-collapse:separate; border-spacing:0; width:100%; }
+table.compare-table{ border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed; }
 .compare-table th, .compare-table td{
-  padding:8px 8px; border-bottom:1px solid var(--border); text-align:center; font-size:11.5px;
+  padding:6px 3px; border-bottom:1px solid var(--border); text-align:center; font-size:10px;
 }
 .compare-table thead th{
   position:sticky; top:0; z-index:2; background:var(--chip-bg); color:var(--text-muted);
-  font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.03em;
-  white-space:normal; line-height:1.25; padding:8px 6px;
+  font-weight:600; font-size:8.5px; text-transform:uppercase; letter-spacing:.02em;
+  white-space:normal; line-height:1.15; padding:6px 3px; word-break:break-word;
 }
 .compare-table th:first-child, .compare-table td:first-child{
   position:sticky; left:0; z-index:1; background:var(--surface); text-align:left;
-  min-width:132px; max-width:150px; white-space:normal; line-height:1.3;
+  width:88px; max-width:88px; white-space:normal; line-height:1.2;
   box-shadow:1px 0 0 var(--border);
 }
 .compare-table thead th:first-child{ z-index:3; background:var(--chip-bg); }
-.compare-table td.index-cell{ font-weight:600; color:var(--text); font-size:12px; }
-.compare-table td.index-cell .row-unit{ display:block; font-weight:500; color:var(--text-muted); font-size:10px; margin-top:1px; }
+.compare-table td.index-cell{ font-weight:600; color:var(--text); font-size:10.5px; }
+.compare-table td.index-cell .row-unit{ display:block; font-weight:500; color:var(--text-muted); font-size:8.5px; margin-top:1px; }
 .compare-table tr.section-row td{
-  text-align:left; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
-  color:var(--brand); background:var(--chip-bg); position:static; box-shadow:none; padding:7px 10px;
+  text-align:left; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+  color:var(--brand); background:var(--chip-bg); position:static; box-shadow:none; padding:6px 8px;
 }
-.compare-table td.price-cell{ min-width:88px; }
-.compare-table td.empty-cell{ color:var(--text-muted); min-width:88px; }
+.compare-table td.price-cell{ width:56px; }
+.compare-table td.empty-cell{ width:56px; color:var(--text-muted); }
 .compare-table .cell-price{
-  font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums;
+  font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:600; font-variant-numeric:tabular-nums;
 }
 .compare-table td.price-cell.best{ background:var(--best-bg); border-radius:0; }
 .compare-table td.price-cell.best .cell-price{ color:var(--best); font-weight:700; }
-.compare-table .cell-promo{ font-size:9px; font-weight:700; color:var(--promo); text-transform:uppercase; letter-spacing:.02em; margin-top:1px; }
+.compare-table .cell-promo{ font-size:8px; font-weight:700; color:var(--promo); text-transform:uppercase; letter-spacing:.01em; margin-top:1px; }
 .compare-table .cell-stepper{
-  display:flex; align-items:center; justify-content:center; gap:3px; margin-top:5px;
+  display:flex; align-items:center; justify-content:center; gap:2px; margin-top:4px;
 }
 .compare-table .cell-stepper .qty-btn{
-  width:20px; height:20px; border-radius:6px; border:1px solid var(--border); background:var(--surface);
-  color:var(--text); font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; flex:none;
+  width:16px; height:16px; border-radius:5px; border:1px solid var(--border); background:var(--surface);
+  color:var(--text); font-size:11px; line-height:1; display:flex; align-items:center; justify-content:center; flex:none; padding:0;
 }
 .compare-table td.price-cell.best .cell-stepper .qty-btn{ border-color:var(--best); color:var(--best); }
 .compare-table .cell-stepper .qty-btn:disabled{ opacity:0.35; }
 .compare-table .cell-stepper .qty-input{
-  width:26px; height:20px; border:1px solid var(--border); border-radius:6px; text-align:center;
-  font-size:11px; font-family:'IBM Plex Mono', monospace; background:var(--surface); color:var(--text); padding:0;
+  width:20px; height:16px; border:1px solid var(--border); border-radius:5px; text-align:center;
+  font-size:9.5px; font-family:'IBM Plex Mono', monospace; background:var(--surface); color:var(--text); padding:0;
 }
 
 .add-btn{
@@ -406,6 +406,20 @@ footer b{ color:var(--text); }
   var SUPPLIERS = [];
   PRODUCTS.forEach(function(p){ p.offers.forEach(function(o){ if(SUPPLIERS.indexOf(o.supplier) === -1) SUPPLIERS.push(o.supplier); }); });
 
+  // Which regions each supplier actually serves, derived from PRODUCTS offers ('Oba' = both).
+  var SUPPLIER_REGIONS = {};
+  PRODUCTS.forEach(function(p){
+    p.offers.forEach(function(o){
+      var set = SUPPLIER_REGIONS[o.supplier] || (SUPPLIER_REGIONS[o.supplier] = {});
+      if(o.region === 'Oba'){ set['Północ'] = true; set['Południe'] = true; }
+      else { set[o.region] = true; }
+    });
+  });
+  function supplierServesRegion(supplier, region){
+    var set = SUPPLIER_REGIONS[supplier];
+    return !!(set && set[region]);
+  }
+
   // ---------- State ----------
   var state = {
     region: 'Północ',
@@ -466,7 +480,9 @@ footer b{ color:var(--text); }
         return byName || supplierMatches.indexOf(o.supplier) !== -1;
       });
       return { product:p, offers: offers.slice().sort(function(a,b){ return a.price - b.price; }) };
-    }).filter(function(g){ return g.offers.length > 0; });
+    }).filter(function(g){ return g.offers.length > 0; })
+      // Wyniki posortowane od najtańszej oferty, jak w analiza cenowa (Wyszukiwarka).
+      .sort(function(a,b){ return a.offers[0].price - b.offers[0].price; });
   }
 
   function keyFor(p){ return p.name + '||' + p.qualifier; }
@@ -555,17 +571,29 @@ footer b{ color:var(--text); }
     return min;
   }
 
-  function compareCellHtml(item, supplierIdx, category, rowIdx){
+  // Compact price format for the compare table — no "zł" suffix, keeps columns narrow
+  // enough to fit a phone screen without horizontal scrolling per-cell.
+  function fmtCompact(n){ return n.toLocaleString('pl-PL', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+
+  function compareVisibleSupplierIdx(category, region){
+    var suppliers = COMPARE_DATA[category].suppliers;
+    var idx = [];
+    suppliers.forEach(function(s, i){ if(supplierServesRegion(s, region)) idx.push(i); });
+    return idx.length ? idx : suppliers.map(function(s,i){ return i; }); // fallback: show all if region data is empty
+  }
+
+  function compareCellHtml(item, supplierIdx, category, rowIdx, visibleIdx){
     var price = item.prices[supplierIdx];
     if(price === null) return '<td class="empty-cell">—</td>';
     var supplier = COMPARE_DATA[category].suppliers[supplierIdx];
-    var min = compareRowMinPrice(item);
+    var min = null;
+    visibleIdx.forEach(function(i){ var p = item.prices[i]; if(p !== null && (min === null || p < min)) min = p; });
     var isBest = min !== null && Math.abs(price - min) < 1e-9;
     var syntheticProduct = { name: item.name, qualifier: '', unit: item.unit };
     var qty = getQty(supplier, syntheticProduct);
     return (
       '<td class="price-cell' + (isBest ? ' best' : '') + '" data-supplier="' + supplier + '" data-row="' + rowIdx + '">' +
-        '<div class="cell-price">' + fmt(price) + '</div>' +
+        '<div class="cell-price">' + fmtCompact(price) + '</div>' +
         '<div class="cell-stepper">' +
           '<button class="qty-btn qty-minus"' + (qty === 0 ? ' disabled' : '') + '>−</button>' +
           '<input class="qty-input" type="number" inputmode="numeric" min="0" value="' + qty + '">' +
@@ -575,19 +603,23 @@ footer b{ color:var(--text); }
     );
   }
 
-  function compareTableHtml(category){
+  function compareTableHtml(category, region){
     var data = COMPARE_DATA[category];
     if(!data) return emptyStateHtml();
-    var suppliers = data.suppliers;
+    var visibleIdx = compareVisibleSupplierIdx(category, region);
+    var suppliers = visibleIdx.map(function(i){ return data.suppliers[i]; });
     var thead = '<thead><tr><th>Artykuł</th>' +
       suppliers.map(function(s){ return '<th>' + s + '</th>'; }).join('') + '</tr></thead>';
     var tbody = '<tbody>' + data.items.map(function(item, rowIdx){
       if(item.section){
-        return '<tr class="section-row"><td colspan="' + (suppliers.length + 1) + '">' + item.section + '</td></tr>';
+        return '<tr class="section-row"><td colspan="' + (visibleIdx.length + 1) + '">' + item.section + '</td></tr>';
       }
+      // skip rows with no offer at all from any supplier visible in this region
+      var hasVisibleOffer = visibleIdx.some(function(i){ return item.prices[i] !== null; });
+      if(!hasVisibleOffer) return '';
       return '<tr data-row="' + rowIdx + '">' +
-        '<td class="index-cell">' + item.name + '<span class="row-unit">cena za ' + item.unit + '</span></td>' +
-        suppliers.map(function(s, i){ return compareCellHtml(item, i, category, rowIdx); }).join('') +
+        '<td class="index-cell">' + item.name + '<span class="row-unit">' + item.unit + '</span></td>' +
+        visibleIdx.map(function(i){ return compareCellHtml(item, i, category, rowIdx, visibleIdx); }).join('') +
       '</tr>';
     }).join('') + '</tbody>';
     return '<div class="compare-table-wrap"><table class="compare-table">' + thead + tbody + '</table></div>';
@@ -616,8 +648,11 @@ footer b{ color:var(--text); }
 
     if(compareMode){
       title = state.category === 'meat' ? 'Porównaj mięso' : 'Porównaj warzywa';
-      var productCount = compareData ? compareData.items.filter(function(it){ return !it.section; }).length : 0;
-      metaCount = 'Region: ' + compareData.region + ' &middot; ' + productCount + ' produkty';
+      var visibleIdx = compareVisibleSupplierIdx(state.category, state.region);
+      var productCount = compareData ? compareData.items.filter(function(it){
+        return !it.section && visibleIdx.some(function(i){ return it.prices[i] !== null; });
+      }).length : 0;
+      metaCount = 'Region: ' + state.region + ' &middot; ' + productCount + ' produkty';
       showBack = true;
     } else {
       title = 'Wyniki wyszukiwania';
@@ -630,7 +665,7 @@ footer b{ color:var(--text); }
     html += '<div class="results-meta-row"><h1>' + title + '</h1><span class="meta-count">' + metaCount + '</span></div></div>';
     html += '<main>';
     if(compareMode){
-      html += compareTableHtml(state.category);
+      html += compareTableHtml(state.category, state.region);
     } else if(groups.length === 0){
       html += emptyStateHtml();
     } else {
