@@ -698,7 +698,19 @@ footer b{ color:var(--text); }
 
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(function(){});
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    reg.addEventListener('updatefound', function(){
+      var nw = reg.installing;
+      if(!nw) return;
+      nw.addEventListener('statechange', function(){
+        if(nw.state === 'activated'){
+          window.location.reload();
+        }
+      });
+    });
+    // force a check for a newer service worker/version every time the page opens
+    reg.update().catch(function(){});
+  }).catch(function(){});
 }
 </script>
 </body>
