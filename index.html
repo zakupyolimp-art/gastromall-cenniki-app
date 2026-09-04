@@ -436,16 +436,35 @@ footer b{ color:var(--text); }
     return words.every(function(w){ return haystack.indexOf(w) !== -1; });
   }
 
+  // Supplier-name search: typing a supplier (e.g. "kompania", "kuchnia centralna")
+  // shows everything that supplier offers, same as a product-name search would.
+  function matchingSuppliers(query){
+    var q = normalize(query);
+    if(!q) return [];
+    return SUPPLIERS.filter(function(s){ return normalize(s).indexOf(q) !== -1; });
+  }
+
   function getFilteredProducts(){
     var list = PRODUCTS;
     if(state.mode === 'category'){
       list = list.filter(function(p){ return p.category === state.category; });
-    } else {
-      list = list.filter(function(p){ return productMatchesQuery(p, state.query); });
+      return list.map(function(p){
+        var offers = p.offers.filter(function(o){ return offerMatchesRegion(o, state.region); });
+        return { product:p, offers: offers.slice().sort(function(a,b){ return a.price - b.price; }) };
+      }).filter(function(g){ return g.offers.length > 0; });
     }
+    var supplierMatches = matchingSuppliers(state.query);
+    list = list.filter(function(p){
+      return productMatchesQuery(p, state.query) ||
+        (supplierMatches.length > 0 && p.offers.some(function(o){ return supplierMatches.indexOf(o.supplier) !== -1; }));
+    });
     // apply region filter to offers, drop products with zero matching offers
     return list.map(function(p){
-      var offers = p.offers.filter(function(o){ return offerMatchesRegion(o, state.region); });
+      var byName = productMatchesQuery(p, state.query);
+      var offers = p.offers.filter(function(o){
+        if(!offerMatchesRegion(o, state.region)) return false;
+        return byName || supplierMatches.indexOf(o.supplier) !== -1;
+      });
       return { product:p, offers: offers.slice().sort(function(a,b){ return a.price - b.price; }) };
     }).filter(function(g){ return g.offers.length > 0; });
   }
