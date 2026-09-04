@@ -262,6 +262,23 @@ footer b{ color:var(--text); }
   transition:opacity .18s ease, transform .18s ease; z-index:40;
 }
 .share-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+.confirm-overlay{
+  position:absolute; inset:0; background:rgba(10,14,10,0.5);
+  z-index:50; display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.confirm-box{
+  background:var(--surface); border-radius:16px; padding:22px 20px; width:100%; max-width:320px;
+  box-shadow:0 20px 50px rgba(0,0,0,0.25);
+}
+.confirm-box h3{ margin:0 0 8px; font-family:'Fraunces',serif; font-size:17px; font-weight:600; color:var(--text); }
+.confirm-box p{ margin:0 0 18px; font-size:12.5px; color:var(--text-muted); line-height:1.5; }
+.confirm-actions{ display:flex; gap:10px; }
+.confirm-cancel, .confirm-ok{
+  flex:1; padding:11px; border-radius:10px; font-size:13px; font-weight:700;
+}
+.confirm-cancel{ border:1px solid var(--border); background:var(--surface); color:var(--text); }
+.confirm-ok{ border:1px solid var(--promo); background:var(--promo); color:#fff; }
 </style>
 </head>
 <body>
@@ -313,6 +330,17 @@ footer b{ color:var(--text); }
         <div class="grand-total"><span>Suma wszystkich koszyków</span><span class="val" id="grandTotalVal">0,00 zł</span></div>
         <button class="clear-all-btn" id="clearAllBtn">Wyczyść wszystkie koszyki</button>
         <p>Przykładowe dane &middot; realny stan koszyków po podłączeniu do Cennika zbiorczego.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="confirmOverlay" hidden>
+    <div class="confirm-box">
+      <h3>Wyczyścić wszystkie koszyki?</h3>
+      <p>Usuniesz wszystkie pozycje u wszystkich dostawców. Tej operacji nie można cofnąć.</p>
+      <div class="confirm-actions">
+        <button class="confirm-cancel" id="confirmCancel">Anuluj</button>
+        <button class="confirm-ok" id="confirmOk">Wyczyść</button>
       </div>
     </div>
   </div>
@@ -625,10 +653,18 @@ footer b{ color:var(--text); }
   document.getElementById('drawerClose').addEventListener('click', function(){ drawerOverlay.hidden = true; });
   drawerOverlay.addEventListener('click', function(e){ if(e.target === drawerOverlay) drawerOverlay.hidden = true; });
 
+  var confirmOverlay = document.getElementById('confirmOverlay');
   document.getElementById('clearAllBtn').addEventListener('click', function(){
-    if(!window.confirm('Wyczyścić wszystkie koszyki u wszystkich dostawców? Tej operacji nie można cofnąć.')) return;
+    confirmOverlay.hidden = false;
+  });
+  document.getElementById('confirmCancel').addEventListener('click', function(){
+    confirmOverlay.hidden = true;
+  });
+  document.getElementById('confirmOk').addEventListener('click', function(){
+    confirmOverlay.hidden = true;
     clearBasket();
   });
+  confirmOverlay.addEventListener('click', function(e){ if(e.target === confirmOverlay) confirmOverlay.hidden = true; });
 
   // ---------- Init ----------
   syncRegionButtons();
