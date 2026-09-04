@@ -206,9 +206,11 @@ table.compare-table{ border-collapse:separate; border-spacing:0; width:100%; tab
 .compare-table td.index-cell{ font-weight:600; color:var(--text); font-size:10.5px; }
 .compare-table td.index-cell .row-unit{ display:block; font-weight:500; color:var(--text-muted); font-size:8.5px; margin-top:1px; }
 .compare-table tr.section-row td{
-  text-align:left; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
-  color:var(--brand); background:var(--chip-bg); position:static; box-shadow:none; padding:6px 8px;
+  text-align:left; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  color:#ffffff; background:var(--brand); position:static; box-shadow:none; padding:7px 8px;
+  border-top:2px solid var(--brand-dark); border-bottom:2px solid var(--brand-dark);
 }
+.compare-table tr.section-row:first-child td{ border-top:none; }
 .compare-table td.price-cell{ width:56px; }
 .compare-table td.empty-cell{ width:56px; color:var(--text-muted); }
 .compare-table .cell-price{
@@ -406,18 +408,26 @@ footer b{ color:var(--text); }
   var SUPPLIERS = [];
   PRODUCTS.forEach(function(p){ p.offers.forEach(function(o){ if(SUPPLIERS.indexOf(o.supplier) === -1) SUPPLIERS.push(o.supplier); }); });
 
-  // Which regions each supplier actually serves, derived from PRODUCTS offers ('Oba' = both).
-  var SUPPLIER_REGIONS = {};
+  // Which regions each supplier actually serves, derived from PRODUCTS offers.
+  // Counts per exact region tag ('Oba' counted separately) — a supplier is only treated as
+  // "Oba" (both regions) when a real share of its offers are tagged that way, so a single
+  // stray/exceptional 'Oba' entry on an otherwise single-region supplier (e.g. Kompania Mięsna,
+  // whose one "przy zamówieniu innych produktów" conditional offer is tagged Oba while 114 of
+  // its other offers are Południe-only) doesn't wrongly make it appear in the other region too.
+  var SUPPLIER_REGION_COUNTS = {};
   PRODUCTS.forEach(function(p){
     p.offers.forEach(function(o){
-      var set = SUPPLIER_REGIONS[o.supplier] || (SUPPLIER_REGIONS[o.supplier] = {});
-      if(o.region === 'Oba'){ set['Północ'] = true; set['Południe'] = true; }
-      else { set[o.region] = true; }
+      var c = SUPPLIER_REGION_COUNTS[o.supplier] || (SUPPLIER_REGION_COUNTS[o.supplier] = { 'Północ':0, 'Południe':0, 'Oba':0, total:0 });
+      c[o.region] = (c[o.region] || 0) + 1;
+      c.total++;
     });
   });
   function supplierServesRegion(supplier, region){
-    var set = SUPPLIER_REGIONS[supplier];
-    return !!(set && set[region]);
+    var c = SUPPLIER_REGION_COUNTS[supplier];
+    if(!c) return false;
+    if(c[region] > 0) return true;
+    // 'Oba' only counts as covering both regions when it's a meaningful share, not an outlier.
+    return c.Oba > 0 && (c.Oba / c.total >= 0.05 || c.Oba >= 3);
   }
 
   // ---------- State ----------
@@ -576,10 +586,22 @@ footer b{ color:var(--text); }
   function fmtCompact(n){ return n.toLocaleString('pl-PL', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
 
   function compareVisibleSupplierIdx(category, region){
-    var suppliers = COMPARE_DATA[category].suppliers;
+    var data = COMPARE_DATA[category];
+    var suppliers = data.suppliers;
+    // A column only earns a place if the supplier both serves this region AND actually has
+    // at least one price in this table — a supplier with zero data here (e.g. Rodmer, whose
+    // "do druku" snapshot has no filled-in prices for warzywa) would otherwise show as an
+    // all-dashes column no matter the region.
+    var hasAnyPrice = suppliers.map(function(s, i){
+      return data.items.some(function(it){ return !it.section && it.prices[i] !== null; });
+    });
     var idx = [];
-    suppliers.forEach(function(s, i){ if(supplierServesRegion(s, region)) idx.push(i); });
-    return idx.length ? idx : suppliers.map(function(s,i){ return i; }); // fallback: show all if region data is empty
+    suppliers.forEach(function(s, i){ if(hasAnyPrice[i] && supplierServesRegion(s, region)) idx.push(i); });
+    if(idx.length) return idx;
+    // fallback: if the region filter leaves nothing, show every supplier that has any data at all
+    idx = [];
+    suppliers.forEach(function(s, i){ if(hasAnyPrice[i]) idx.push(i); });
+    return idx;
   }
 
   function compareCellHtml(item, supplierIdx, category, rowIdx, visibleIdx){
