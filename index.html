@@ -25,6 +25,7 @@
   --text: #1a201c;
   --text-muted: #5c6b60;
   --border: #dde3da;
+  --table-border: #cfd7cb;
   --best: #2f7d3c;
   --best-bg: #e6f4e6;
   --promo: #b3401f;
@@ -38,6 +39,7 @@
     --text: #eef1ea;
     --text-muted: #98a394;
     --border: #2b332a;
+    --table-border: #48544a;
     --best: #5cb86b;
     --best-bg: #1c2f1e;
     --promo: #e07454;
@@ -51,6 +53,7 @@
   --text: #eef1ea;
   --text-muted: #98a394;
   --border: #2b332a;
+  --table-border: #48544a;
   --best: #5cb86b;
   --best-bg: #1c2f1e;
   --promo: #e07454;
@@ -154,9 +157,16 @@ header{
 }
 .back-btn svg{ width:13px; height:13px; }
 
-main{ flex:1; padding:4px 18px 28px; display:flex; flex-direction:column; gap:18px; }
+main{ flex:1; padding:4px 18px 28px; display:flex; flex-direction:column; gap:26px; }
 
-.product-group{ border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--surface); }
+.product-group{
+  border:1.5px solid var(--border); border-radius:14px; overflow:hidden; background:var(--surface);
+  box-shadow:0 2px 10px rgba(0,0,0,0.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .product-group{ box-shadow:0 2px 10px rgba(0,0,0,0.35); }
+}
+:root[data-theme="dark"] .product-group{ box-shadow:0 2px 10px rgba(0,0,0,0.35); }
 .product-head{ padding:12px 14px 10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
 .product-name{ font-size:14.5px; font-weight:700; line-height:1.3; }
 .product-name .qualifier{ font-weight:500; color:var(--text-muted); }
@@ -190,8 +200,10 @@ main{ flex:1; padding:4px 18px 28px; display:flex; flex-direction:column; gap:18
 }
 table.compare-table{ border-collapse:separate; border-spacing:0; width:100%; table-layout:fixed; }
 .compare-table th, .compare-table td{
-  padding:6px 3px; border-bottom:1px solid var(--border); text-align:center; font-size:10px;
+  padding:6px 3px; border-bottom:1px solid var(--table-border); border-right:1px solid var(--table-border);
+  text-align:center; font-size:10px; color:var(--text);
 }
+.compare-table th:last-child, .compare-table td:last-child{ border-right:none; }
 .compare-table thead th{
   position:sticky; top:0; z-index:2; background:var(--chip-bg); color:var(--text-muted);
   font-weight:600; font-size:8.5px; text-transform:uppercase; letter-spacing:.02em;
@@ -200,7 +212,7 @@ table.compare-table{ border-collapse:separate; border-spacing:0; width:100%; tab
 .compare-table th:first-child, .compare-table td:first-child{
   position:sticky; left:0; z-index:1; background:var(--surface); text-align:left;
   width:88px; max-width:88px; white-space:normal; line-height:1.2;
-  box-shadow:1px 0 0 var(--border);
+  box-shadow:1px 0 0 var(--table-border);
 }
 .compare-table thead th:first-child{ z-index:3; background:var(--chip-bg); }
 .compare-table td.index-cell{ font-weight:600; color:var(--text); font-size:10.5px; }
@@ -530,6 +542,34 @@ footer b{ color:var(--text); }
 
   function fmt(n){ return n.toLocaleString('pl-PL', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' zł'; }
 
+  // ---------- Per-kg price normalization ----------
+  // Prices are shown per kg wherever the product's real weight is known — parsed from a
+  // weight explicitly stated in the product name (e.g. "...1800g", "...ok.4kg"), the same
+  // number analiza cenowa itself carries in "Ilość w jedn. bazowej". Deliberately skips
+  // multi-pack patterns like "50x85g" (ambiguous: could mean 50 units of 85g, or something
+  // else — guessing wrong here would silently show a fabricated price) and anything outside
+  // a plausible single-item weight range. A product with NO parseable weight (many true
+  // per-sztuka items — a single avocado, a head of lettuce — genuinely have none, and
+  // analiza cenowa itself leaves those priced per sztuka rather than inventing one) keeps
+  // its original unit; there is no honest way to force those to zł/kg without making up a
+  // number, so this never does that.
+  function parseWeightKg(name){
+    if(/\d+\s*x\s*\d+[.,]?\d*\s*(kg|g)\b/i.test(name)) return null; // multi-pack, ambiguous
+    var m = name.match(/(\d+[.,]?\d*)\s*kg\b/i);
+    if(m){ var vKg = parseFloat(m[1].replace(',', '.')); return (vKg > 0 && vKg <= 50) ? vKg : null; }
+    m = name.match(/(\d+[.,]?\d*)\s*g\b/i);
+    if(m){ var vG = parseFloat(m[1].replace(',', '.')) / 1000; return (vG > 0 && vG <= 50) ? vG : null; }
+    return null;
+  }
+  // Returns { price, unit } — price per kg + unit "kg" when convertible, otherwise the
+  // original price/unit unchanged.
+  function perKg(product, price){
+    if(product.unit === 'kg') return { price: price, unit: 'kg' };
+    var weight = parseWeightKg(product.name);
+    if(weight) return { price: price / weight, unit: 'kg' };
+    return { price: price, unit: product.unit };
+  }
+
   function offerMatchesRegion(offer, region){ return offer.region === 'Oba' || offer.region === region; }
 
   function normalize(s){ return s.toLowerCase().replace(/[.,]/g,''); }
@@ -583,11 +623,17 @@ footer b{ color:var(--text); }
     });
     return order.map(function(key){
       var g = groupsMap[key];
-      g.offers = dedupeOffersBySupplier(g.offers, key).sort(function(a,b){ return a.price - b.price; });
+      // Sort — and so pick "Najniższa cena" — by the true comparable (per-kg where known)
+      // price, not the raw package price, otherwise a bigger pack could wrongly look cheaper.
+      g.offers = dedupeOffersBySupplier(g.offers, key).sort(function(a,b){
+        return perKg(g.product, a.price).price - perKg(g.product, b.price).price;
+      });
       return g;
     })
       // Wyniki posortowane od najtańszej oferty, jak w analiza cenowa (Wyszukiwarka).
-      .sort(function(a,b){ return a.offers[0].price - b.offers[0].price; });
+      .sort(function(a,b){
+        return perKg(a.product, a.offers[0].price).price - perKg(b.product, b.offers[0].price).price;
+      });
   }
 
   function keyFor(p){ return p.name + '||' + p.qualifier; }
@@ -635,6 +681,9 @@ footer b{ color:var(--text); }
     if(offer.promo) tags += '<span class="tag promo">Promocja</span>';
     tags += '<span class="tag region">' + offer.region + '</span>';
     var qty = getQty(offer.supplier, product);
+    var norm = perKg(product, offer.price);
+    var converted = norm.unit === 'kg' && product.unit !== 'kg';
+    var origLine = converted ? '<div class="price-orig">' + fmt(offer.price) + ' / ' + product.unit + '</div>' : '';
     return (
       '<div class="offer-row' + (isBest ? ' best' : '') + '">' +
         '<div class="offer-left"><span class="supplier-dot"></span><div class="supplier-info">' +
@@ -642,7 +691,7 @@ footer b{ color:var(--text); }
           '<div class="offer-tags">' + tags + '</div>' +
         '</div></div>' +
         '<div class="offer-main">' +
-          '<div class="offer-price"><div class="price-value">' + fmt(offer.price) + '</div><div class="price-per">za ' + product.unit + '</div></div>' +
+          '<div class="offer-price"><div class="price-value">' + fmt(norm.price) + '</div><div class="price-per">za ' + norm.unit + '</div>' + origLine + '</div>' +
           '<div class="qty-stepper">' +
             '<button class="qty-btn qty-minus"' + (qty === 0 ? ' disabled' : '') + '>−</button>' +
             '<input class="qty-input" type="number" inputmode="numeric" min="0" value="' + qty + '">' +
@@ -657,10 +706,11 @@ footer b{ color:var(--text); }
     var p = group.product;
     var nameHtml = p.name + (p.qualifier ? ' <span class="qualifier">' + p.qualifier + '</span>' : '');
     var rows = group.offers.map(function(o,i){ return offerRowHtml(p, o, i === 0); }).join('');
+    var unitLabel = (p.unit === 'kg' || parseWeightKg(p.name)) ? 'kg' : p.unit;
     return (
       '<div class="product-group" data-key="' + group.key + '">' +
         '<div class="product-head"><div><div class="product-name">' + nameHtml + '</div>' +
-        '<div class="product-unit">cena za ' + p.unit + '</div></div>' +
+        '<div class="product-unit">cena za ' + unitLabel + '</div></div>' +
         '<div class="offer-count">' + group.offers.length + (group.offers.length === 1 ? ' oferta' : ' oferty') + '</div></div>' +
         rows +
       '</div>'
@@ -708,9 +758,10 @@ footer b{ color:var(--text); }
     var isBest = min !== null && Math.abs(price - min) < 1e-9;
     var syntheticProduct = { name: item.name, qualifier: '', unit: item.unit };
     var qty = getQty(supplier, syntheticProduct);
+    var norm = perKg(syntheticProduct, price); // same unit for every cell in the row, so relative order (isBest) is unaffected
     return (
       '<td class="price-cell' + (isBest ? ' best' : '') + '" data-supplier="' + supplier + '" data-row="' + rowIdx + '">' +
-        '<div class="cell-price">' + fmtCompact(price) + '</div>' +
+        '<div class="cell-price">' + fmtCompact(norm.price) + '</div>' +
         '<div class="cell-stepper">' +
           '<button class="qty-btn qty-minus"' + (qty === 0 ? ' disabled' : '') + '>−</button>' +
           '<input class="qty-input" type="number" inputmode="numeric" min="0" value="' + qty + '">' +
@@ -734,8 +785,9 @@ footer b{ color:var(--text); }
       // skip rows with no offer at all from any supplier visible in this region
       var hasVisibleOffer = visibleIdx.some(function(i){ return item.prices[i] !== null; });
       if(!hasVisibleOffer) return '';
+      var rowUnit = (item.unit === 'kg' || parseWeightKg(item.name)) ? 'kg' : item.unit;
       return '<tr data-row="' + rowIdx + '">' +
-        '<td class="index-cell">' + item.name + '<span class="row-unit">' + item.unit + '</span></td>' +
+        '<td class="index-cell">' + item.name + '<span class="row-unit">' + rowUnit + '</span></td>' +
         visibleIdx.map(function(i){ return compareCellHtml(item, i, category, rowIdx, visibleIdx); }).join('') +
       '</tr>';
     }).join('') + '</tbody>';

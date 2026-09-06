@@ -34,6 +34,57 @@ memory. **Anything agreed here that should survive to the next session must be w
 not just stated in chat — a session only "remembers" what's committed to the repo (code + this file).
 Update this file whenever a lasting decision is made about the app's structure, data format, or conventions.
 
+## Region-aware supplier columns (compare view)
+
+Which supplier column shows for which region (Północ/Południe) is **not** inferred from sample
+offer counts — it's hardcoded in `SUPPLIER_REGION` (in `index.html`) verbatim from analiza cenowa's
+own source of truth: the **"Synonimy" sheet's Dostawca/Region reference table** (columns D:E), the
+same table the workbook's own search formula (`Cennik zbiorczy!V`, via `VLOOKUP`) uses. If a new
+supplier is added or a region assignment changes, update that table in the Excel workbook first,
+then mirror the same mapping into `SUPPLIER_REGION` here — don't re-derive it by counting sample
+offers, that produced wrong results before (a single stray "Oba"-tagged conditional offer among 114
+Południe-only ones once made a supplier wrongly appear in both regions).
+
+`COMPARE_DATA` (the compare-table dataset, sourced from "Mięso/Warzywa - do druku") sometimes lacks
+a column for a real supplier entirely (e.g. Transhurt was missing from meat) or has one with zero
+prices filled in (e.g. Rodmer for warzywa) — when that happens, backfill it from `PRODUCTS` by exact
+product-name match rather than leaving the supplier out, and propagate into duplicate TOP/CENY
+STANDARD rows of the same product (matched by identical price vectors across the original 4
+suppliers) so both rows show the backfilled price, not just one.
+
+## Canonical product identity (search-view grouping)
+
+The same real product is often listed under different literal names per supplier in `PRODUCTS`
+(e.g. "łopatka wieprzowa", "BP Łopatka wieprzowa b/k ok.4kg [PROMOCJA]", "Łopatka wp b/k 4D" are all
+the same "ŁOPATKA"). General search groups results by a **canonical key** derived from `COMPARE_DATA`
+(see `canonicalKeyFor` / `CANONICAL_ROWS` in `index.html`), not by raw product name — this merges
+those into one card instead of one misleading card per raw name, each wrongly tagged "Najniższa
+cena". When `COMPARE_DATA` changes, this mapping is rebuilt automatically from it; no separate data
+file to maintain.
+
+## Price normalization — zł/kg wherever honestly possible
+
+Every price (search cards and compare-table cells alike) is shown per kg whenever the product's real
+weight is knowable — parsed from a weight stated in the product name (`parseWeightKg` /
+`perKg` in `index.html`), the same number analiza cenowa itself keeps in "Ilość w jedn. bazowej".
+**A product with no parseable weight (a single avocado, a head of lettuce, a decorative edible
+flower — genuinely priced per sztuka with no stated weight) is deliberately left at its original
+per-sztuka/per-worek price** — analiza cenowa itself does this too (its "Jednostka bazowa" column is
+not always kg). Do not invent an assumed weight to force these to zł/kg; a fabricated conversion
+factor would silently show a wrong number in a tool used for real purchasing decisions. When a price
+is converted, the original package price/unit is still shown as a small secondary line so nothing is
+hidden. "Najniższa cena" / row-highlight sorting always compares the per-kg price when one exists,
+never the raw package price (otherwise a bigger pack could wrongly look cheaper).
+
+## Visual conventions
+
+- Search-result cards (`.product-group`) need a visibly distinct boundary from each other — border +
+  shadow + a real gap between cards (`main`'s `gap`) — so a list of different articles doesn't blur
+  into one mass. Don't shrink that gap back down for density's sake.
+- The compare table uses a dedicated `--table-border` token (brighter than the regular `--border` in
+  dark mode) for its row/column divider lines — the regular `--border` token is too low-contrast
+  against the dark surface for a dense data table. Keep using `--table-border` there, not `--border`.
+
 ## Related repo
 
 `cenniki-automatyzacja` (private) holds the actual supplier price-list files and the `analiza cenowa`
