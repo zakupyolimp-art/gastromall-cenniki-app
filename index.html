@@ -618,6 +618,41 @@ footer b{ color:var(--text); }
     { category:'meat', canon:'ŁOPATKA', supplier:'Biernat', raw:'łopatka wieprzowa' },
     { category:'meat', canon:'KARKÓWKA', supplier:'Biernat', raw:'Karkówka wieprzowa b/k' }
   );
+  ALIAS_OVERRIDES.push(
+    { category:'meat', canon:'WĄTROBA Z KURCZAKA', supplier:'CHEFS', raw:'CCL Wątroba kurczaka, vacuum, ok. 2 KG/PA (SP-BL) [PROMOCJA]' },
+    { category:'meat', canon:'WĄTROBA Z KURCZAKA', supplier:'Biernat', raw:'Wątroba kurczaka' },
+    { category:'meat', canon:'WĄTROBA Z KURCZAKA', supplier:'Transhurt', raw:'Wątroba kurczaka' },
+    { category:'meat', canon:'Wątroba kurczaka', supplier:'CHEFS', raw:'CCL Wątroba kurczaka, vacuum, ok. 2 KG/PA (SP-BL) [PROMOCJA]' },
+    { category:'meat', canon:'łopatka wieprzowa', supplier:'CHEFS', raw:'BP Łopatka wieprzowa b/k    ok.4kg [PROMOCJA]' },
+    { category:'meat', canon:'Mięso z nogi kurc.b/k z/s', supplier:'CHEFS', raw:'Mięso z nogi kurc.b/k z/s ok.2,5kg' },
+    { category:'meat', canon:'Skrzydełka z kurczaka', supplier:'CHEFS', raw:'Skrzydełka z kurczaka       ok.2kg' },
+    { category:'meat', canon:'Mięso wołowe gul.80-20', supplier:'Biernat', raw:'Mięso wołowe gul.80-20 ( II )' },
+    { category:'meat', canon:'Noga z kurczaka kl.A', supplier:'CHEFS', raw:'Noga z kurczaka kl.A        ok.2kg' },
+    { category:'meat', canon:'Udo z kurczaka', supplier:'CHEFS', raw:'Udo z kurczaka              ok.2kg' },
+    { category:'meat', canon:'Kurczak tuszka z szyją vac.', supplier:'CHEFS', raw:'Kurczak tuszka' },
+    { category:'meat', canon:'Kurczak tuszka z szyją vac.', supplier:'Biernat', raw:'Kurczak tuszka' },
+    { category:'meat', canon:'Kurczak tuszka z szyją vac.', supplier:'Bruno Tassi', raw:'Kurczak tuszka' },
+    { category:'meat', canon:'Kurczak tuszka z szyją vac.', supplier:'Kompania Mięsna', raw:'Kurczak tuszka' },
+    { category:'meat', canon:'Kurczak tuszka z szyją vac.', supplier:'Transhurt', raw:'Kurczak tuszka' },
+    { category:'meat', canon:'Karkówka wieprzowa b/k', supplier:'CHEFS', raw:'BP Karkówka wieprz. b/k ok.2-3,5kg [PROMOCJA]' },
+    { category:'meat', canon:'Mięso wieprzowe mielone', supplier:'CHEFS', raw:'CCL Mięso mielone z łopatki wieprzowej, bez kości, rozdr. 5 mm, garmażeryjne [PROMOCJA]' },
+    { category:'meat', canon:'Porcja rosołowa z kurczaka.kl.A map ok. 1', supplier:'Biernat', raw:'Porcja rosołowa z kurczaka.kl.A map ok. 15kg' },
+    { category:'veg', canon:'Pieczarka I', supplier:'Farutex', raw:'Pieczarka A' },
+    { category:'veg', canon:'Pieczarka I', supplier:'Extra Fruits', raw:'Pieczarka (kl. I)' },
+    { category:'veg', canon:'Banan', supplier:'CHEFS', raw:'O+W Banany, s.doj.:4/5' },
+    { category:'veg', canon:'Cebula czerwona obrana 5kg', supplier:'CHEFS', raw:'O+W Cebula czerwona, obrana 5kg' },
+    { category:'veg', canon:'Cebula dymka', supplier:'CHEFS', raw:'O+W Cebula dymka, pęczek' },
+    { category:'veg', canon:'Kiełki buraka 200g', supplier:'Farutex', raw:'O+W Kiełki buraka 200g' },
+    { category:'veg', canon:'Kiełki buraka 200g', supplier:'CHEFS', raw:'O+W Kiełki buraka 200g' },
+    { category:'veg', canon:'Koper pęczek duży 500g', supplier:'Extra Fruits', raw:'Koper 500g' },
+    { category:'veg', canon:'Marchew', supplier:'CHEFS', raw:'O+W Marchew pom.młoda 10kg' },
+    { category:'veg', canon:'Mix sałat 4 500g Horeca Fresh', supplier:'Extra Fruits', raw:'Sałata mix -' },
+    { category:'veg', canon:'Pak choi', supplier:'CHEFS', raw:'O+W Mini pak choi' },
+    { category:'veg', canon:'Papryka czerwona', supplier:'Extra Fruits', raw:'Papryka czerwona (kl. I)' },
+    { category:'veg', canon:'Sałata rzymska', supplier:'CHEFS', raw:'O+W Sałata rzymska, kl.1' },
+    { category:'veg', canon:'Szczypior cienki pęczek duży 300g', supplier:'Extra Fruits', raw:'Szczypiorek' },
+    { category:'veg', canon:'Szczypior paluch pęczek duży 500g', supplier:'Extra Fruits', raw:'Szczypiorek' },
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
