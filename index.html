@@ -653,6 +653,11 @@ footer b{ color:var(--text); }
     { category:'veg', canon:'Szczypior cienki pęczek duży 300g', supplier:'Extra Fruits', raw:'Szczypiorek' },
     { category:'veg', canon:'Szczypior paluch pęczek duży 500g', supplier:'Extra Fruits', raw:'Szczypiorek' },
   );
+  ALIAS_OVERRIDES.push(
+    { category:'meat', canon:'Mięso wieprzowe mielone', supplier:'Biernat', raw:'Mielona łopatka wieprzowa' },
+    { category:'meat', canon:'MIĘSO MIELONE Z ŁOPATKI', supplier:'Biernat', raw:'Mielona łopatka wieprzowa' },
+    { category:'meat', canon:'MIĘSO Z NOGI KURCZAKA B/S B/K', supplier:'Biernat', raw:'Mięso z nog.kur.b/k.b/s' },
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
