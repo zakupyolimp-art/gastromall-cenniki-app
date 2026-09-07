@@ -757,12 +757,13 @@ footer b{ color:var(--text); }
   }
 
   function fuzzyIncludes(haystack, word){
-    var wl = word.length;
-    for(var len = wl - 1; len <= wl + 1; len++){
-      if(len <= 0) continue;
-      for(var i = 0; i + len <= haystack.length; i++){
-        if(withinOneEdit(haystack.substr(i, len), word)) return true;
-      }
+    // Porównujemy z CAŁYMI słowami haystacka, nie z dowolnym przesuwanym oknem znaków —
+    // okno-po-znakach fałszywie łapało np. "tuszka" wewnątrz "pietRUSZKA" (podciąg "ruszka"
+    // różni się od "tuszka" tylko jedną literą), pokazując jabłko/pietruszkę przy szukaniu
+    // "tuszka". Realny błąd znaleziony 2026-09-07.
+    var tokens = haystack.split(/\s+/);
+    for(var i = 0; i < tokens.length; i++){
+      if(withinOneEdit(tokens[i], word)) return true;
     }
     return false;
   }
