@@ -508,10 +508,67 @@ footer b{ color:var(--text); }
     var longer = ta.length <= tb.length ? tb : ta;
     return shorter.every(function(t){ return longer.indexOf(t) !== -1; });
   }
+  // Confirmed manual overrides for cases the automatic name-matching below can't safely
+  // bridge on its own (a supplier's own naming/abbreviation convention diverges too far
+  // from the canonical row's name for nameRelated() to accept — e.g. CHEFS's "O+W X, k.30-
+  // 60mm, 3kg" spec-heavy naming vs the plain canonical "X"). Each entry here was verified
+  // to be the SAME real product by price + category (audited 2026-09-07, 34 confirmed
+  // pairs) — this is deliberately a hand-checked list, not a looser fuzzy rule, because
+  // loosening the matcher risks silently merging two different products that happen to
+  // share a price (this happened once already with an unrelated Farutex herb/vegetable
+  // pair, excluded from this list, not merged).
+  var ALIAS_OVERRIDES = [
+    { category:'meat', canon:'KARKÓWKA', supplier:'Kompania Mięsna', raw:'Karczek wp b/k' },
+    { category:'meat', canon:'FILET Z KURCZAKA HORECA EXTRA', supplier:'CHEFS', raw:'BP Filet z pier.kurcz.poj. ok.15kg [PROMOCJA]' },
+    { category:'meat', canon:'FILET Z KURCZAKA HORECA EXTRA', supplier:'Transhurt', raw:'Filet z piersi kurczaka vac' },
+    { category:'meat', canon:'MIĘSO Z NOGI KURCZAKA B/S B/K', supplier:'Kompania Mięsna', raw:'Mięso trybowane z nogi bez skóry' },
+    { category:'meat', canon:'MIĘSO MIELONE Z ŁOPATKI', supplier:'CHEFS', raw:'Mięso wiep.mielone garmaż. ok.2kg' },
+    { category:'meat', canon:'MIĘSO MIELONE Z ŁOPATKI', supplier:'Transhurt', raw:'Mięso wieprzowe mielone' },
+    { category:'meat', canon:'WĄTROBA Z KURCZAKA', supplier:'Kompania Mięsna', raw:'Wątróbka' },
+    { category:'meat', canon:'Żeberka wieprzowe paski', supplier:'CHEFS', raw:'Żeber.wp.paski ok.500-800g/2-2,5kg' },
+    { category:'meat', canon:'Filet z piersi kurczaka vac', supplier:'CHEFS', raw:'Filet z piersi kurcz. vac.ok.2,5kg' },
+    { category:'meat', canon:'Szynka-Kulka wiep.b/k.b/sk.', supplier:'CHEFS', raw:'Szynka-Kulka wiep.b/k.b/s ok.3-5kg' },
+    { category:'meat', canon:'Porcja rosołowa z kurczaka.kl.A map ok. 1', supplier:'CHEFS', raw:'Porcja rosoł.z kurcz.kl.A ok.15kg' },
+    { category:'meat', canon:'Porcja rosołowa z kurczaka.kl.A map ok. 1', supplier:'Kompania Mięsna', raw:'Porcje rosołowe z kurczaka' },
+    { category:'meat', canon:'Polędwiczka wieprz.z główką', supplier:'Kompania Mięsna', raw:'Polędwiczki wp' },
+    { category:'veg', canon:'Pieczarka I', supplier:'CHEFS', raw:'O+W Pieczarki kl.1, k.30-60mm, 3kg' },
+    { category:'veg', canon:'Pieczarki klasa II', supplier:'Extra Fruits', raw:'Pieczarka (kl. II)' },
+    { category:'veg', canon:'Bazylia doniczka duża XXXL', supplier:'CHEFS', raw:'O+W Zioła doniczka - Bazylia' },
+    { category:'veg', canon:'Bazylia doniczka XL', supplier:'CHEFS', raw:'O+W Zioła doniczka - Bazylia' },
+    { category:'veg', canon:'Burak obrany 5kg', supplier:'Extra Fruits', raw:'Burak czerwony (obrany/obrana - obrane warzywo)' },
+    { category:'veg', canon:'Cebula czerwona obrana 5kg', supplier:'Extra Fruits', raw:'Cebula czerwona (obrany/obrana - obrane warzywo)' },
+    { category:'veg', canon:'Cytryna sokowa', supplier:'CHEFS', raw:'O+W Cytryny na sok, kl.2,k.3/4/5/6' },
+    { category:'veg', canon:'Grapefruit', supplier:'CHEFS', raw:'O+W Grejpfruty kl.1,k.1/2/3/4' },
+    { category:'veg', canon:'Grapefruit sokowy', supplier:'CHEFS', raw:'O+W Grejpfruty na sok kl.2,k.5/6/7' },
+    { category:'veg', canon:'Imbir korzeń', supplier:'CHEFS', raw:'O+W Imbir                     500g' },
+    { category:'veg', canon:'Jabłko drobne', supplier:'CHEFS', raw:'O+W Jabłka drobne, kl.2,śr.60-70mm' },
+    { category:'veg', canon:'Limonka kl.I', supplier:'CHEFS', raw:'O+W Limonki                     kg' },
+    { category:'veg', canon:'Marchew obrana 5kg', supplier:'Extra Fruits', raw:'Marchew (obrany/obrana - obrane warzywo)' },
+    { category:'veg', canon:'Mięta doniczka XL', supplier:'CHEFS', raw:'O+W Zioła doniczka - Mięta' },
+    { category:'veg', canon:'Ogórek małosolny 3kg', supplier:'CHEFS', raw:'O+W Ogórki małosolne           5kg' },
+    { category:'veg', canon:'Pietruszka obrana 5kg', supplier:'CHEFS', raw:'O+W Pietruszka obrana          2kg' },
+    { category:'veg', canon:'Pietruszka obrana 5kg', supplier:'Extra Fruits', raw:'Pietruszka korzeń (obrany/obrana - obrane warzywo)' },
+    { category:'veg', canon:'Pomidor koktajlowy', supplier:'CHEFS', raw:'O+W Pomidory koktajlowe.gałą.3kg' },
+    { category:'veg', canon:'Sałata lodowa główka', supplier:'CHEFS', raw:'O+W Sałata lodowa, kl.1' },
+    { category:'veg', canon:'Ziemniak obrany 10kg', supplier:'CHEFS', raw:'O+W Ziemniaki obrane 5kg' },
+    { category:'veg', canon:'Ziemniaki patatki', supplier:'CHEFS', raw:'O+W Ziemniaki - potatki wczes.10kg' }
+  ];
+  var ALIAS_OVERRIDE_MAP = {};
+  ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
+
   CANONICAL_ROWS.forEach(function(row){
     CANONICAL_PRODUCT[row.key] = { name: row.name, qualifier: '', unit: row.unit, category: row.category };
     Object.keys(row.prices).forEach(function(supplier){
       var price = row.prices[supplier];
+      var overrideRaw = ALIAS_OVERRIDE_MAP[row.category+'::'+row.name+'::'+supplier];
+      if(overrideRaw){
+        var forced = PRODUCTS.filter(function(p){ return p.category === row.category && p.name === overrideRaw; });
+        if(forced.length === 1){
+          var fk = rawKeyOf(forced[0]);
+          if(!PRODUCT_ALIAS[fk]) PRODUCT_ALIAS[fk] = row.key;
+          return;
+        }
+      }
       var candidates = PRODUCTS.filter(function(p){
         return p.category === row.category && p.offers.some(function(o){
           return o.supplier === supplier && Math.abs(o.price - price) < 0.005;
