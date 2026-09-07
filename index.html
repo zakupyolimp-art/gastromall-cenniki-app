@@ -526,6 +526,7 @@ footer b{ color:var(--text); }
     { category:'meat', canon:'MIĘSO Z NOGI KURCZAKA B/S B/K', supplier:'Kompania Mięsna', raw:'Mięso trybowane z nogi bez skóry' },
     { category:'meat', canon:'MIĘSO MIELONE Z ŁOPATKI', supplier:'CHEFS', raw:'Mięso wiep.mielone garmaż. ok.2kg' },
     { category:'meat', canon:'MIĘSO MIELONE Z ŁOPATKI', supplier:'Transhurt', raw:'Mięso wieprzowe mielone' },
+    { category:'meat', canon:'MIĘSO MIELONE Z ŁOPATKI', supplier:'Kompania Mięsna', raw:'Mielona łopatka wieprzowa' },
     { category:'meat', canon:'WĄTROBA Z KURCZAKA', supplier:'Kompania Mięsna', raw:'Wątróbka' },
     { category:'meat', canon:'Żeberka wieprzowe paski', supplier:'CHEFS', raw:'Żeber.wp.paski ok.500-800g/2-2,5kg' },
     { category:'meat', canon:'Filet z piersi kurczaka vac', supplier:'CHEFS', raw:'Filet z piersi kurcz. vac.ok.2,5kg' },
@@ -555,6 +556,7 @@ footer b{ color:var(--text); }
     { category:'veg', canon:'Ziemniak obrany 10kg', supplier:'CHEFS', raw:'O+W Ziemniaki obrane 5kg' },
     { category:'veg', canon:'Ziemniaki patatki', supplier:'CHEFS', raw:'O+W Ziemniaki - potatki wczes.10kg' }
   ];
+  ALIAS_OVERRIDES.push({ category:'meat', canon:'ŁOPATKA', supplier:'Kompania Mięsna', raw:'Łopatka wp b/k 4D' });
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
