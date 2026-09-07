@@ -614,6 +614,10 @@ footer b{ color:var(--text); }
     { category:'meat', canon:'SCHAB', supplier:'Transhurt', raw:'Schab wp bez kości' },
     { category:'meat', canon:'KARKÓWKA', supplier:'CHEFS', raw:'BP Karkówka wieprz. b/k ok.2-3,5kg [PROMOCJA]' }
   );
+  ALIAS_OVERRIDES.push(
+    { category:'meat', canon:'ŁOPATKA', supplier:'Biernat', raw:'łopatka wieprzowa' },
+    { category:'meat', canon:'KARKÓWKA', supplier:'Biernat', raw:'Karkówka wieprzowa b/k' }
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
