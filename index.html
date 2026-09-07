@@ -617,11 +617,49 @@ footer b{ color:var(--text); }
 
   function normalize(s){ return s.toLowerCase().replace(/[.,]/g,''); }
 
+  // Tolerate exactly one typo (insert/delete/substitute) per word, only for words long
+  // enough (>=4 chars) that a fuzzy match still means something specific — this is what
+  // catches "pomidorr"/"pomidr" as "pomidor" without ever loosening short/generic words
+  // (which would otherwise start matching half the catalogue).
+  function withinOneEdit(a, b){
+    if(a === b) return true;
+    var la = a.length, lb = b.length;
+    if(Math.abs(la - lb) > 1) return false;
+    if(la === lb){
+      var diff = 0;
+      for(var i = 0; i < la; i++){ if(a[i] !== b[i]){ diff++; if(diff > 1) return false; } }
+      return diff === 1;
+    }
+    var s = la < lb ? a : b, l = la < lb ? b : a;
+    var i = 0, j = 0, diff = 0;
+    while(i < s.length && j < l.length){
+      if(s[i] === l[j]){ i++; j++; }
+      else { diff++; if(diff > 1) return false; j++; }
+    }
+    return true;
+  }
+
+  function fuzzyIncludes(haystack, word){
+    var wl = word.length;
+    for(var len = wl - 1; len <= wl + 1; len++){
+      if(len <= 0) continue;
+      for(var i = 0; i + len <= haystack.length; i++){
+        if(withinOneEdit(haystack.substr(i, len), word)) return true;
+      }
+    }
+    return false;
+  }
+
+  function wordMatches(haystack, w){
+    if(haystack.indexOf(w) !== -1) return true;
+    return w.length >= 4 && fuzzyIncludes(haystack, w);
+  }
+
   function productMatchesQuery(product, query){
     var words = normalize(query).split(/\s+/).filter(Boolean);
     if(words.length === 0) return true;
     var haystack = normalize(product.name + ' ' + product.qualifier);
-    return words.every(function(w){ return haystack.indexOf(w) !== -1; });
+    return words.every(function(w){ return wordMatches(haystack, w); });
   }
 
   // Supplier-name search: typing a supplier (e.g. "kompania", "kuchnia centralna")
