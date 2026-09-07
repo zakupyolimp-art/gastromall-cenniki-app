@@ -561,6 +561,30 @@ footer b{ color:var(--text); }
     { category:'meat', canon:'ŁOPATKA', supplier:'Transhurt', raw:'łopatka wieprzowa' },
     { category:'meat', canon:'ŁOPATKA', supplier:'CHEFS', raw:'BP Łopatka wieprzowa b/k    ok.4kg [PROMOCJA]' }
   );
+  ALIAS_OVERRIDES.push(
+    { category:'veg', canon:'Boczniak', supplier:'CHEFS', raw:'O+W Boczniak 2kg' },
+    { category:'veg', canon:'Bakłażan', supplier:'CHEFS', raw:'O+W Bakłażan' },
+    { category:'veg', canon:'Brokuł', supplier:'CHEFS', raw:'O+W Brokuł 500g+' },
+    { category:'veg', canon:'Cukinia', supplier:'CHEFS', raw:'O+W Cukinia zielona             kg' },
+    { category:'veg', canon:'Kalafior', supplier:'CHEFS', raw:'O+W Kalafior                   szt' },
+    { category:'veg', canon:'Kapusta biała', supplier:'CHEFS', raw:'O+W Kapusta biała               kg' },
+    { category:'veg', canon:'Kapusta czerwona', supplier:'CHEFS', raw:'O+W Kapusta czerwona            kg' },
+    { category:'veg', canon:'Kapusta pekińska', supplier:'CHEFS', raw:'O+W Kapusta pekińska' },
+    { category:'veg', canon:'Kapusta włoska', supplier:'CHEFS', raw:'O+W Kapusta włoska              kg' },
+    { category:'veg', canon:'Papryka czerwona', supplier:'CHEFS', raw:'O+W Papryka czerwona' },
+    { category:'veg', canon:'Papryka zielona', supplier:'CHEFS', raw:'O+W Papryka zielona' },
+    { category:'veg', canon:'Papryka żółta', supplier:'CHEFS', raw:'O+W Papryka żółta' },
+    { category:'veg', canon:'Pietruszka korzeń', supplier:'CHEFS', raw:'O+W Pietruszka korzeń          5kg' },
+    { category:'veg', canon:'Rzodkiew biała', supplier:'CHEFS', raw:'O+W Rzodkiew biała' },
+    { category:'veg', canon:'Seler naciowy', supplier:'CHEFS', raw:'O+W Seler naciowy' },
+    { category:'veg', canon:'Ogórek zielony', supplier:'Extra Fruits', raw:'Ogórek zielony (kl. I)' },
+    { category:'veg', canon:'Awokado Hass', supplier:'CHEFS', raw:'O+W Awokado hass, rte, k.16' },
+    { category:'veg', canon:'Imbir korzeń', supplier:'Extra Fruits', raw:'Imbir' },
+    { category:'meat', canon:'Podudzie z kurczaka', supplier:'Kompania Mięsna', raw:'Podudzie (pałki) z kurczaka' },
+    { category:'meat', canon:'Szynka-Kulka wiep.b/k.b/sk.', supplier:'Kompania Mięsna', raw:'Szynka kulka' },
+    { category:'meat', canon:'Ćwiartka z kurczaka kl.A', supplier:'Kompania Mięsna', raw:'Ćwiartka z kurczaka' },
+    { category:'meat', canon:'KARKÓWKA', supplier:'Transhurt', raw:'Karkówka wieprzowa b/k' },
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
