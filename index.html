@@ -606,6 +606,14 @@ footer b{ color:var(--text); }
     { category:'veg', canon:'Seler obrany 5kg', supplier:'CHEFS', raw:'O+W Seler obrany               2kg' },
     { category:'veg', canon:'Czosnek obrany 1kg', supplier:'CHEFS', raw:'O+W Czosnek obrany vacuum     1kg' }
   );
+  ALIAS_OVERRIDES.push(
+    { category:'meat', canon:'SCHAB', supplier:'CHEFS', raw:'Schab wp bez kości' },
+    { category:'meat', canon:'SCHAB', supplier:'Biernat', raw:'Schab wp bez kości' },
+    { category:'meat', canon:'SCHAB', supplier:'Bruno Tassi', raw:'Schab wp bez kości' },
+    { category:'meat', canon:'SCHAB', supplier:'Kompania Mięsna', raw:'Schab wp bez kości' },
+    { category:'meat', canon:'SCHAB', supplier:'Transhurt', raw:'Schab wp bez kości' },
+    { category:'meat', canon:'KARKÓWKA', supplier:'CHEFS', raw:'BP Karkówka wieprz. b/k ok.2-3,5kg [PROMOCJA]' }
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
