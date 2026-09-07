@@ -602,6 +602,10 @@ footer b{ color:var(--text); }
     { category:'veg', canon:'Seler obrany 5kg', supplier:'Extra Fruits', raw:'Seler korzeń (obrany/obrana - obrane warzywo)' },
     { category:'veg', canon:'Ziemniak obrany 10kg', supplier:'Extra Fruits', raw:'Ziemniak (obrany/obrana - obrane warzywo)' }
   );
+  ALIAS_OVERRIDES.push(
+    { category:'veg', canon:'Seler obrany 5kg', supplier:'CHEFS', raw:'O+W Seler obrany               2kg' },
+    { category:'veg', canon:'Czosnek obrany 1kg', supplier:'CHEFS', raw:'O+W Czosnek obrany vacuum     1kg' }
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
