@@ -184,6 +184,7 @@ main{ flex:1; padding:4px 18px 28px; display:flex; flex-direction:column; gap:26
 .offer-row.best .supplier-dot{ background:var(--best); }
 .supplier-info{ min-width:0; }
 .supplier-name{ font-size:13.5px; font-weight:600; white-space:normal; overflow-wrap:break-word; line-height:1.3; }
+.supplier-note{ font-size:11px; font-weight:500; color:var(--text-muted); white-space:normal; overflow-wrap:break-word; margin-top:1px; }
 .offer-tags{ display:flex; gap:6px; margin-top:3px; flex-wrap:wrap; }
 .tag{ font-size:10px; font-weight:600; padding:2px 6px; border-radius:5px; letter-spacing:0.02em; }
 .tag.region{ background:var(--chip-bg); color:var(--text-muted); }
@@ -313,6 +314,7 @@ footer b{ color:var(--text); }
 .basket-line .qty{ color:var(--text-muted); font-family:'IBM Plex Mono',monospace; flex:none; }
 .basket-line .name{ flex:1; }
 .basket-line .sum{ font-family:'IBM Plex Mono',monospace; font-weight:600; flex:none; }
+.basket-hidden-note{ padding:10px 13px; font-size:11.5px; color:var(--text-muted); background:var(--chip-bg); border-radius:10px; margin-top:4px; line-height:1.4; }
 .basket-empty{ padding:14px 13px; font-size:12px; color:var(--text-muted); border-top:1px solid var(--border); }
 
 .drawer-foot{ padding:14px 18px 18px; border-top:1px solid var(--border); }
@@ -835,21 +837,25 @@ footer b{ color:var(--text); }
       });
   }
 
-  function keyFor(p){ return p.name + '||' + p.qualifier; }
+  // offer jest opcjonalny (widok Porównaj nie ma wariantów) — gdy oferta niesie własny opis
+  // (offer.note, np. "przy zamówieniu innych produktów"), musi wejść do klucza koszyka, inaczej
+  // dwie różne ceny tego samego dostawcy dla tego samego produktu nadpisywałyby się nawzajem
+  // w koszyku (dokładnie ten sam produkt+dostawca, ale inny wariant/cena).
+  function keyFor(p, offer){ return p.name + '||' + p.qualifier + '||' + ((offer && offer.note) || ''); }
 
-  function getQty(supplier, product){
+  function getQty(supplier, product, offer){
     var b = state.basket[supplier];
-    var k = keyFor(product);
+    var k = keyFor(product, offer);
     return (b && b[k]) ? b[k].qty : 0;
   }
 
   function setQty(product, offer, qty){
     qty = Math.max(0, Math.round(qty || 0));
     var supplier = offer.supplier;
-    var k = keyFor(product);
+    var k = keyFor(product, offer);
     var b = state.basket[supplier] || (state.basket[supplier] = {});
     if(qty === 0){ delete b[k]; }
-    else { b[k] = { name: product.name, qualifier: product.qualifier, qty: qty, price: offer.price }; }
+    else { b[k] = { name: product.name, qualifier: product.qualifier, note: offer.note || '', qty: qty, price: offer.price }; }
     renderCartBadge();
     renderDrawer();
   }
@@ -879,14 +885,15 @@ footer b{ color:var(--text); }
     if(isBest) tags += '<span class="tag best-badge">Najniższa cena</span>';
     if(offer.promo) tags += '<span class="tag promo">Promocja</span>';
     tags += '<span class="tag region">' + offer.region + '</span>';
-    var qty = getQty(offer.supplier, product);
+    var qty = getQty(offer.supplier, product, offer);
     var norm = perKg(product, offer.price);
     var converted = norm.unit === 'kg' && product.unit !== 'kg';
     var origLine = converted ? '<div class="price-orig">' + fmt(offer.price) + ' / ' + product.unit + '</div>' : '';
+    var noteLine = offer.note ? '<div class="supplier-note">' + offer.note + '</div>' : '';
     return (
       '<div class="offer-row' + (isBest ? ' best' : '') + '">' +
         '<div class="offer-left"><span class="supplier-dot"></span><div class="supplier-info">' +
-          '<div class="supplier-name">' + offer.supplier + '</div>' +
+          '<div class="supplier-name">' + offer.supplier + '</div>' + noteLine +
           '<div class="offer-tags">' + tags + '</div>' +
         '</div></div>' +
         '<div class="offer-main">' +
@@ -1145,9 +1152,17 @@ footer b{ color:var(--text); }
   });
 
   // ---------- Drawer ----------
+  // Pokazujemy tylko koszyki dostawców obsługujących AKTUALNIE wybrany region — koszyk dostawcy
+  // spoza tego regionu (np. Kompania Mięsna w widoku Północ) tylko myliłby restaurację, która i
+  // tak nie może u niego zamówić w tym regionie. Zawartość koszyka NIE jest przy tym kasowana —
+  // wróci do widoku, gdy użytkownik przełączy z powrotem na właściwy region.
   function renderDrawer(){
     var html = '';
-    SUPPLIERS.forEach(function(supplier){
+    var widocznyDostawcy = SUPPLIERS.filter(function(s){ return supplierServesRegion(s, state.region); });
+    var ukryciZTowarem = SUPPLIERS.filter(function(s){
+      return !supplierServesRegion(s, state.region) && Object.keys(state.basket[s] || {}).length > 0;
+    });
+    widocznyDostawcy.forEach(function(supplier){
       var items = state.basket[supplier] || {};
       var keys = Object.keys(items);
       var total = basketTotalFor(supplier);
@@ -1162,7 +1177,7 @@ footer b{ color:var(--text); }
       } else {
         keys.forEach(function(k){
           var it = items[k];
-          var fullName = it.name + (it.qualifier ? ' ' + it.qualifier : '');
+          var fullName = it.name + (it.qualifier ? ' ' + it.qualifier : '') + (it.note ? ' (' + it.note + ')' : '');
           html += '<div class="basket-line"><span class="qty">' + it.qty + ' ' + 'kg' + '</span>' +
             '<span class="name">' + fullName + '</span>' +
             '<span class="sum">' + fmt(it.qty * it.price) + '</span></div>';
@@ -1170,6 +1185,10 @@ footer b{ color:var(--text); }
       }
       html += '</div>';
     });
+    if(ukryciZTowarem.length > 0){
+      html += '<div class="basket-hidden-note">Masz też produkty w koszyku dostawców spoza regionu '
+        + state.region + ' (' + ukryciZTowarem.join(', ') + ') — przełącz region, żeby je zobaczyć.</div>';
+    }
     drawerBody.innerHTML = html;
     grandTotalVal.textContent = fmt(grandTotal());
 
@@ -1182,7 +1201,7 @@ footer b{ color:var(--text); }
         var text = 'Zamówienie – ' + supplier + '\n';
         Object.keys(items).forEach(function(k){
           var it = items[k];
-          var fullName = it.name + (it.qualifier ? ' ' + it.qualifier : '');
+          var fullName = it.name + (it.qualifier ? ' ' + it.qualifier : '') + (it.note ? ' (' + it.note + ')' : '');
           text += '• ' + it.qty + ' kg ' + fullName + ' — ' + fmt(it.qty * it.price) + '\n';
         });
         text += 'Razem: ' + fmt(basketTotalFor(supplier));
