@@ -557,6 +557,10 @@ footer b{ color:var(--text); }
     { category:'veg', canon:'Ziemniaki patatki', supplier:'CHEFS', raw:'O+W Ziemniaki - potatki wczes.10kg' }
   ];
   ALIAS_OVERRIDES.push({ category:'meat', canon:'ŁOPATKA', supplier:'Kompania Mięsna', raw:'Łopatka wp b/k 4D' });
+  ALIAS_OVERRIDES.push(
+    { category:'meat', canon:'ŁOPATKA', supplier:'Transhurt', raw:'łopatka wieprzowa' },
+    { category:'meat', canon:'ŁOPATKA', supplier:'CHEFS', raw:'BP Łopatka wieprzowa b/k    ok.4kg [PROMOCJA]' }
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
