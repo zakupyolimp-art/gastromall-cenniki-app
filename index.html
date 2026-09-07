@@ -657,14 +657,20 @@ footer b{ color:var(--text); }
   // whichever offer's price matches the verified analiza cenowa price for that supplier when
   // known, else the first one encountered.
   function dedupeOffersBySupplier(offers, groupKey){
+    // Klucz dedupu MUSI zawierać offer.note — od 2026-09-07 jeden dostawca może mieć w tej
+    // samej karcie kilka NAPRAWDĘ różnych ofert (różne warianty/kalibraże/rabaty, patrz
+    // GRUPY_RECZNE i dopisek "(przy zamówieniu innych produktów)" w generuj_apke.py). Klucz
+    // po samym supplier zlepiał je w jedną, cicho gubiąc pozostałe (realny bug, złapany od
+    // razu przy pierwszym teście koszyków).
     var canonicalPrices = (CANONICAL_ROW_BY_KEY[groupKey] || {}).prices || {};
     var bySupplier = {}, order = [];
     offers.forEach(function(o){
-      if(!(o.supplier in bySupplier)){ bySupplier[o.supplier] = o; order.push(o.supplier); return; }
+      var k = o.supplier + '||' + (o.note || '');
+      if(!(k in bySupplier)){ bySupplier[k] = o; order.push(k); return; }
       var known = canonicalPrices[o.supplier];
-      if(known !== undefined && Math.abs(o.price - known) < 0.005) bySupplier[o.supplier] = o;
+      if(known !== undefined && Math.abs(o.price - known) < 0.005) bySupplier[k] = o;
     });
-    return order.map(function(s){ return bySupplier[s]; });
+    return order.map(function(k){ return bySupplier[k]; });
   }
 
   // ---------- State ----------
