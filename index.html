@@ -596,6 +596,12 @@ footer b{ color:var(--text); }
     { category:'veg', canon:'Sałata lodowa główka', supplier:'Extra Fruits', raw:'Sałata lodowa' },
     { category:'veg', canon:'Rzodkiewka rożek/pęczek', supplier:'Extra Fruits', raw:'Rzodkiewka' }
   );
+  ALIAS_OVERRIDES.push(
+    { category:'veg', canon:'Cebula biała obrana 5kg', supplier:'Extra Fruits', raw:'Cebula biała (obrany/obrana - obrane warzywo)' },
+    { category:'veg', canon:'Czosnek obrany 1kg', supplier:'Extra Fruits', raw:'Czosnek (obrany/obrana - obrane warzywo)' },
+    { category:'veg', canon:'Seler obrany 5kg', supplier:'Extra Fruits', raw:'Seler korzeń (obrany/obrana - obrane warzywo)' },
+    { category:'veg', canon:'Ziemniak obrany 10kg', supplier:'Extra Fruits', raw:'Ziemniak (obrany/obrana - obrane warzywo)' }
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
