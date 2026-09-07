@@ -354,7 +354,7 @@ footer b{ color:var(--text); }
   <header>
     <div class="brand-lockup">
       <div class="brand-lockup-left">
-        <div class="brand-mark">G</div>
+        <div class="brand-mark" id="brandRefresh" role="button" aria-label="Odśwież dane" title="Odśwież dane" style="cursor:pointer;">G</div>
         <div class="brand-text">Gastromall Group
           <small>Wyszukiwarka cen &middot; dane na żywo</small>
         </div>
@@ -467,7 +467,8 @@ footer b{ color:var(--text); }
     data.items.forEach(function(item){
       if(item.section) return;
       var sig = item.prices.map(function(p){ return p === null ? 'x' : p.toFixed(2); }).join('|');
-      var existing = CANONICAL_ROWS.filter(function(r){ return r.category === category && r.sig === sig; })[0];
+      var sigMaPrawdziwaCene = sig.split('|').some(function(s){ return s !== 'x'; });
+      var existing = sigMaPrawdziwaCene ? CANONICAL_ROWS.filter(function(r){ return r.category === category && r.sig === sig; })[0] : null;
       if(existing) return; // duplicate row (TOP/STANDARD pair) — already covered
       var priceBySupplier = {};
       suppliers.forEach(function(s, i){ if(item.prices[i] !== null) priceBySupplier[s] = item.prices[i]; });
@@ -1208,6 +1209,8 @@ footer b{ color:var(--text); }
     document.body.appendChild(b);
     document.getElementById('updateBannerBtn').addEventListener('click', function(){ location.reload(); });
   }
+  var brandBtn = document.getElementById('brandRefresh');
+  if(brandBtn) brandBtn.addEventListener('click', function(){ location.reload(); });
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'visible') sprawdzNowaWersje();
   });
