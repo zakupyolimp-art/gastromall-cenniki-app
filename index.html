@@ -658,6 +658,15 @@ footer b{ color:var(--text); }
     { category:'meat', canon:'MIĘSO MIELONE Z ŁOPATKI', supplier:'Biernat', raw:'Mielona łopatka wieprzowa' },
     { category:'meat', canon:'MIĘSO Z NOGI KURCZAKA B/S B/K', supplier:'Biernat', raw:'Mięso z nog.kur.b/k.b/s' },
   );
+  ALIAS_OVERRIDES.push(
+    { category:'meat', canon:'FILET Z KURCZAKA - PRODUKCYJNY', supplier:'CHEFS', raw:'Filet z kurczaka poj. z polędwiczką' },
+    { category:'meat', canon:'FILET Z KURCZAKA - PRODUKCYJNY', supplier:'Biernat', raw:'Filet z kurczaka poj. z polędwiczką' },
+    { category:'meat', canon:'FILET Z KURCZAKA - PRODUKCYJNY', supplier:'Kompania Mięsna', raw:'Filet z kurczaka poj. z polędwiczką' },
+    { category:'meat', canon:'FILET Z KURCZAKA - PRODUKCYJNY', supplier:'Bruno Tassi', raw:'Filet z kurczaka poj. z polędwiczką' },
+    { category:'meat', canon:'FILET Z KURCZAKA - PRODUKCYJNY', supplier:'Transhurt', raw:'Filet z kurczaka poj. z polędwiczką' },
+    { category:'meat', canon:'FILET Z KURCZAKA HORECA EXTRA', supplier:'Bruno Tassi', raw:'Filet z kurczaka poj. z polędwiczką' },
+    { category:'meat', canon:'Polędwiczka wieprz.z główką', supplier:'CHEFS', raw:'Polędwiczka wieprz.z głów.ok.2-3kg [PROMOCJA]' },
+  );
   var ALIAS_OVERRIDE_MAP = {};
   ALIAS_OVERRIDES.forEach(function(o){ ALIAS_OVERRIDE_MAP[o.category+'::'+o.canon+'::'+o.supplier] = o.raw; });
 
