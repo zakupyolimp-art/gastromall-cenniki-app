@@ -149,6 +149,19 @@ header{
 .category-btn.is-active{ background:#ffffff; color:var(--brand); border-color:#ffffff; }
 .category-btn.is-active span.dot{ background:currentColor; opacity:0.55; }
 
+/* Pigułki filtrowania kart wyszukiwania (Wszystkie/Mięso/Warzywa) — osobny mechanizm od
+   .category-btn powyżej (ten przełącza cały widok na tabelę porównawczą). Wygląd w duchu
+   Tailwind (rounded-full/px-3 py-1/text-sm font-medium), ale przez tokeny tego designu,
+   bez ładowania CDN Tailwinda (jego globalny preflight nadpisałby style innych elementów). */
+.category-pills{ display:flex; gap:6px; margin:6px 0 2px; flex-wrap:wrap; }
+.category-pill{
+  padding:4px 12px; border-radius:9999px; font-size:13px; font-weight:500;
+  border:1px solid var(--border); background:var(--surface); color:var(--text-muted);
+  cursor:pointer; transition:background .15s,color .15s,border-color .15s;
+}
+.category-pill:hover{ background:var(--border); }
+.category-pill.is-active{ background:var(--brand); color:#ffffff; border-color:var(--brand); }
+
 .results-meta{ padding:14px 18px 6px; display:flex; flex-direction:column; gap:4px; }
 .results-meta-row{ display:flex; justify-content:space-between; align-items:baseline; width:100%; }
 .results-meta h1{ font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin:0; text-wrap:balance; }
@@ -370,6 +383,12 @@ footer b{ color:var(--text); }
     <div class="search-wrap">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="searchInput" placeholder="Szukaj produktu, np. filet z kurczaka" value="filet kurczak" autocomplete="off">
+    </div>
+
+    <div class="category-pills" id="categoryPills">
+      <button class="category-pill is-active" data-cat="all">Wszystkie</button>
+      <button class="category-pill" data-cat="meat">Mięso</button>
+      <button class="category-pill" data-cat="veg">Warzywa</button>
     </div>
 
     <div class="region-row" id="regionRow">
@@ -750,7 +769,8 @@ footer b{ color:var(--text); }
   var state = {
     region: 'Północ',
     mode: 'search',        // 'search' | 'category'
-    category: null,        // 'meat' | 'veg'
+    category: null,        // 'meat' | 'veg' — tryb "Porównaj mięso/warzywa" (osobny mechanizm)
+    categoryFilter: null,  // null | 'meat' | 'veg' — pigułki nad wynikami wyszukiwania (#categoryPills)
     query: 'filet kurczak',
     basket: {}             // { supplier: { "product||qualifier": {name, qualifier, qty, price} } }
   };
@@ -878,6 +898,9 @@ footer b{ color:var(--text); }
         var offers = p.offers.filter(function(o){ return offerMatchesRegion(o, state.region); });
         return { product:p, offers: offers.slice().sort(function(a,b){ return a.price - b.price; }) };
       }).filter(function(g){ return g.offers.length > 0; });
+    }
+    if(state.categoryFilter){
+      list = list.filter(function(p){ return p.category === state.categoryFilter; });
     }
     var supplierMatches = matchingSuppliers(state.query);
     list = list.filter(function(p){
@@ -1229,6 +1252,23 @@ footer b{ color:var(--text); }
     state.category = null;
     syncCategoryButtons();
     render();
+  });
+
+  // Pigułki Wszystkie/Mięso/Warzywa — filtrują karty wyszukiwania przez state.categoryFilter
+  // (pole ODDZIELNE od state.category używanego przez tryb "Porównaj mięso/warzywa" powyżej,
+  // żeby nie kolidować z tamtym mechanizmem — patrz komentarz przy definicji state).
+  document.querySelectorAll('#categoryPills .category-pill').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var cat = btn.dataset.cat === 'all' ? null : btn.dataset.cat;
+      state.categoryFilter = cat;
+      state.mode = 'search';
+      state.category = null;
+      syncCategoryButtons();
+      document.querySelectorAll('#categoryPills .category-pill').forEach(function(b){
+        b.classList.toggle('is-active', b === btn);
+      });
+      render();
+    });
   });
 
   // ---------- Drawer ----------
