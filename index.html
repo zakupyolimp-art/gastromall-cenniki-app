@@ -12,6 +12,14 @@
 <meta name="apple-mobile-web-app-title" content="GG Cenniki">
 <meta name="theme-color" content="#1e542a">
 <meta name="mobile-web-app-capable" content="yes">
+<!-- Google Analytics (GA4) - sledzenie aktywnosci, ta sama wlasciwosc co cennik-www, patrz IIFE "Sledzenie" na dole script -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4062VNT284"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-4062VNT284', { send_page_view: false });
+</script>
 <style>
 [hidden]{ display:none !important; }
 
@@ -360,10 +368,56 @@ footer b{ color:var(--text); }
 }
 .confirm-cancel{ border:1px solid var(--border); background:var(--surface); color:var(--text); }
 .confirm-ok{ border:1px solid var(--promo); background:var(--promo); color:#fff; }
+
+/* Ekran "Kim jesteś?" - jednorazowa identyfikacja (bez hasła), patrz IIFE "Śledzenie" w script */
+.identity-overlay{
+  position:fixed; inset:0; background:rgba(10,14,10,0.6); z-index:200;
+  display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.identity-box{
+  background:var(--surface); border-radius:16px; padding:22px 20px; width:100%; max-width:340px;
+  box-shadow:0 20px 50px rgba(0,0,0,0.3);
+}
+.identity-mark{
+  width:40px; height:40px; border-radius:50%; background:var(--brand); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; margin-bottom:12px;
+}
+.identity-box h3{ margin:0 0 6px; font-family:'Fraunces',serif; font-size:17px; font-weight:600; color:var(--text); }
+.identity-box p{ margin:0 0 16px; font-size:12.5px; color:var(--text-muted); line-height:1.5; }
+.identity-field{ margin-bottom:12px; }
+.identity-field label{ display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:4px; }
+.identity-field input{
+  width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text); font-size:13px; box-sizing:border-box;
+}
+.identity-field input:focus{ outline:2px solid var(--brand); outline-offset:1px; }
+.identity-error{ display:none; font-size:11.5px; color:#c0392b; margin:-4px 0 10px; }
+.identity-error.show{ display:block; }
+.identity-submit{
+  width:100%; padding:12px; border-radius:10px; border:none; background:var(--brand); color:#fff;
+  font-size:13.5px; font-weight:700;
+}
 </style>
 </head>
 <body>
 
+<div class="identity-overlay" id="identityOverlay" hidden>
+  <div class="identity-box">
+    <div class="identity-mark">G</div>
+    <h3>Zanim zaczniesz — kim jesteś?</h3>
+    <p>Podaj imię i nazwisko oraz restaurację. Zapamiętamy to na tym urządzeniu — pytamy tylko raz.</p>
+    <div class="identity-field">
+      <label for="identityImie">Imię i nazwisko</label>
+      <input type="text" id="identityImie" placeholder="np. Jan Kowalski" autocomplete="off">
+    </div>
+    <div class="identity-field">
+      <label for="identityRestauracja">Restauracja</label>
+      <input type="text" id="identityRestauracja" placeholder="np. Olimp Bielsko-Biała" autocomplete="off">
+    </div>
+    <p class="identity-error" id="identityError">Uzupełnij oba pola.</p>
+    <button class="identity-submit" id="identitySubmit">Wejdź do apki</button>
+  </div>
+</div>
 
 <div class="phone">
   <header>
@@ -957,10 +1011,12 @@ footer b{ color:var(--text); }
     var supplier = offer.supplier;
     var k = keyFor(product, offer);
     var b = state.basket[supplier] || (state.basket[supplier] = {});
+    var byla = b[k] ? b[k].qty : 0;
     if(qty === 0){ delete b[k]; }
     else { b[k] = { name: product.name, qualifier: product.qualifier, note: offer.note || '', qty: qty, price: offer.price }; }
     renderCartBadge();
     renderDrawer();
+    if(qty > byla) sledz('dodanie_do_koszyka', { produkt: product.name, dostawca: supplier, ilosc: qty });
   }
 
   function clearBasket(){ state.basket = {}; renderCartBadge(); renderDrawer(); }
@@ -1243,15 +1299,21 @@ footer b{ color:var(--text); }
       state.category = btn.dataset.cat;
       syncCategoryButtons();
       render();
+      sledz('zmiana_zakladki', { zakladka: 'porownanie_' + btn.dataset.cat });
     });
   });
 
+  var wyszukTimer = null;
   searchInput.addEventListener('input', function(){
     state.query = searchInput.value;
     state.mode = 'search';
     state.category = null;
     syncCategoryButtons();
     render();
+    clearTimeout(wyszukTimer);
+    wyszukTimer = setTimeout(function(){
+      if(searchInput.value.trim().length >= 2) sledz('wyszukanie', { fraza: searchInput.value.trim() });
+    }, 600);
   });
 
   // Pigułki Wszystkie/Mięso/Warzywa — filtrują karty wyszukiwania przez state.categoryFilter
@@ -1394,6 +1456,44 @@ footer b{ color:var(--text); }
   });
   setInterval(sprawdzNowaWersje, 15 * 60 * 1000);
   setTimeout(sprawdzNowaWersje, 5000);
+
+  // ---------- Śledzenie aktywności (GA4) ----------
+  // Bez logowania/hasła: przy pierwszym wejściu użytkownik sam wpisuje imię+nazwisko i
+  // restaurację (dowolny tekst, nie lista) - zapamiętane na stałe w localStorage TEGO
+  // urządzenia. Ta sama właściwość GA4 co cennik-www (G-4062VNT284) - dane z obu widoczne
+  // razem w jednym panelu, rozróżnialne po adresie strony (page_location).
+  var KLUCZ_TOZSAMOSCI = 'tozsamosc_uzytkownika';
+  function wczytajTozsamosc(){
+    try { return JSON.parse(localStorage.getItem(KLUCZ_TOZSAMOSCI) || 'null'); } catch(e){ return null; }
+  }
+  function ustawWlasciwosciUzytkownika(dane){
+    if(typeof gtag !== 'function') return;
+    gtag('set', 'user_properties', { imie_nazwisko: dane.imie_nazwisko, restauracja: dane.restauracja });
+  }
+  function sledz(nazwaZdarzenia, params){
+    if(typeof gtag !== 'function') return;
+    var dane = wczytajTozsamosc();
+    var podstawowe = { imie_nazwisko: dane ? dane.imie_nazwisko : '(nieznany)', restauracja: dane ? dane.restauracja : '(nieznana)' };
+    for(var k in (params || {})) podstawowe[k] = params[k];
+    gtag('event', nazwaZdarzenia, podstawowe);
+  }
+  var identityOverlay = document.getElementById('identityOverlay');
+  document.getElementById('identitySubmit').addEventListener('click', function(){
+    var imie = document.getElementById('identityImie').value.trim();
+    var restauracja = document.getElementById('identityRestauracja').value.trim();
+    if(!imie || !restauracja){ document.getElementById('identityError').classList.add('show'); return; }
+    var dane = { imie_nazwisko: imie, restauracja: restauracja };
+    localStorage.setItem(KLUCZ_TOZSAMOSCI, JSON.stringify(dane));
+    identityOverlay.hidden = true;
+    ustawWlasciwosciUzytkownika(dane);
+    sledz('wizyta', { pierwsza_wizyta: true });
+  });
+  (function inicjujSledzenie(){
+    var dane = wczytajTozsamosc();
+    if(!dane){ identityOverlay.hidden = false; return; }
+    ustawWlasciwosciUzytkownika(dane);
+    sledz('wizyta', { pierwsza_wizyta: false });
+  })();
 
 })();
 </script>
