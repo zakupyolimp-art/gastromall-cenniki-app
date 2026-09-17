@@ -993,7 +993,11 @@ footer b{ color:var(--text); }
     // Group by canonical product identity (see canonicalKeyFor above) so the same real
     // product from different suppliers — even under different raw names — lands in one
     // card, same as "Porównaj mięso/warzywa" already does, instead of one card per raw name.
-    var groupsMap = {}, order = [];
+    // Object.create(null) - nie zwykly {} - zeby klucz kanoniczny pasujacy przypadkiem do
+    // nazwy z prototypu (np. "constructor", "__proto__", "toString") nie kolidowal z
+    // odziedziczonymi wlasciwosciami Object.prototype (realny bug zlapany 2026-09-17 przy
+    // wyszukiwaniu "kuchnia centralna" - 102 wyniki, TypeError w renderowaniu kart).
+    var groupsMap = Object.create(null), order = [];
     list.forEach(function(p){
       var byName = productMatchesQuery(p, state.query);
       var offers = p.offers.filter(function(o){
@@ -1111,13 +1115,19 @@ footer b{ color:var(--text); }
     );
   }
 
+  // Klucze kanoniczne mogą zawierać cudzysłów (np. BAGIETKA 30" - oznaczenie cali) - bez
+  // escapowania w atrybucie HTML łamie parsowanie data-key, przez co odczyt groupEl.getAttribute
+  // zwraca ucięty string niepasujący do żadnej grupy -> "Cannot read properties of undefined
+  // (reading 'product')" przy próbie dodania do koszyka (znaleziony 2026-09-17, "kuchnia centralna").
+  function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
   function groupHtml(group){
     var p = group.product;
     var nameHtml = p.name + (p.qualifier ? ' <span class="qualifier">' + p.qualifier + '</span>' : '');
     var rows = group.offers.map(function(o,i){ return offerRowHtml(p, o, i === 0); }).join('');
     var unitLabel = (p.unit === 'kg' || parseWeightKg(p.name)) ? 'kg' : p.unit;
     return (
-      '<div class="product-group" data-key="' + group.key + '">' +
+      '<div class="product-group" data-key="' + escAttr(group.key) + '">' +
         '<div class="product-head"><div><div class="product-name">' + nameHtml + '</div>' +
         '<div class="product-unit">cena za ' + unitLabel + '</div></div>' +
         '<div class="offer-count">' + group.offers.length + (group.offers.length === 1 ? ' oferta' : ' oferty') + '</div></div>' +
