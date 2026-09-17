@@ -85,6 +85,16 @@ never the raw package price (otherwise a bigger pack could wrongly look cheaper)
   dark mode) for its row/column divider lines — the regular `--border` token is too low-contrast
   against the dark surface for a dense data table. Keep using `--table-border` there, not `--border`.
 
+## Trigger: `LAST` — run the cross-device sync check below, then resume the last thread
+
+Plain text, no leading `/`. When the user's message is (or contains) `LAST`: run the sync check
+in this section for **this repo AND the sibling repos** `cenniki-automatyzacja` (folder
+`Cenniki dla AI`) and `cennik-www` (folder `cennik-sandbox/dist`) if reachable from this
+environment, pull in anything found, read the new commits to understand what another session
+(this one included, wherever it last ran) did, then report back concisely and continue that
+thread — don't make the user re-explain where things left off. If this environment only has
+this one repo checked out, just do the check for this repo and say so.
+
 ## Cross-device sync check (multiple Claude Code sessions on this repo)
 
 This repo gets worked on from more than one device/session at once (cloud sessions, phone, the
