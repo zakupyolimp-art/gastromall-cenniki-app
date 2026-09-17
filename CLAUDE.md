@@ -85,6 +85,33 @@ never the raw package price (otherwise a bigger pack could wrongly look cheaper)
   dark mode) for its row/column divider lines — the regular `--border` token is too low-contrast
   against the dark surface for a dense data table. Keep using `--table-border` there, not `--border`.
 
+## Cross-device sync check (multiple Claude Code sessions on this repo)
+
+This repo gets worked on from more than one device/session at once (cloud sessions, phone, the
+local-computer CLI bridge) that **don't share chat memory or a live connection to each other**. The
+only thing they actually share is the git remote (`origin`). To reliably "see what changed on the
+other device", every session — cloud or local — must run this exact check **at the start of any work
+session, and again before starting a new task if the previous check is more than a few minutes old**:
+
+```
+git fetch origin
+git log --oneline HEAD..origin/<current-branch>   # commits that exist remotely but not locally yet
+git status -sb                                    # local uncommitted state, ahead/behind vs remote
+```
+
+If `origin/<branch>` has commits not in the local checkout, that means the other device pushed
+changes this session hasn't seen — pull/rebase them in (`git pull --rebase origin <branch>`) before
+making further edits, don't just barrel ahead on stale code.
+
+The other half of this contract: a session's own changes are invisible to the other device **until
+pushed**. Don't leave work only committed locally — push (`git push -u origin <branch>`) as soon as a
+change is validated, so the fetch/log check above actually finds something on the other end. A change
+sitting uncommitted or unpushed on one device does not exist as far as any other session is concerned.
+
+If working on separate branches per device/session (as the PR-per-session convention here implies),
+also periodically check `git log --oneline HEAD..origin/main` to see what's landed on `main` from
+already-merged sessions, and rebase/merge it in before continuing.
+
 ## Related repo
 
 `cenniki-automatyzacja` (private) holds the actual supplier price-list files and the `analiza cenowa`
