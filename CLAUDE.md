@@ -11,6 +11,45 @@ codebase from) the `cenniki-automatyzacja` repo, which maintains the master Exce
 in `index.html`) should stay aligned with that workbook's "Cennik zbiorczy" data — mięso (meat) and
 warzywa (vegetables/produce), each product with a list of supplier offers (`{supplier, price, region, promo}`).
 
+## Analytics (GA4) + EmailJS (identity, order-send, problem-report) — added 2026-09-17
+
+**GA4 tracking**: Measurement ID `G-4G62VNT284` (letter G at position 3 — NOT a zero, easy to
+mistype visually; a typo here silently broke tracking for 2 days on 2026-09-15/17 until caught).
+No login: first visit shows an identity overlay (`identityOverlay`/`identityImie`/
+`identityRestauracja`) asking imię+nazwisko and restauracja (free text), saved permanently in
+this device's `localStorage` under key `tozsamosc_uzytkownika` (`wczytajTozsamosc()`) — asked
+once per device/browser, then every event carries it as GA4 `user_properties`. Same property and
+same mechanism as the public static site `cennik-www` (`zakupyolimp-art.github.io/cennik-www/`,
+repo `cennik-www`) — events distinguishable by `page_location`. Events tracked: `wizyta`,
+`zmiana_zakladki`, `wyszukanie`, `dodanie_do_koszyka`, `wyslano_zamowienie`.
+
+**EmailJS** (`@emailjs/browser@4`, service `service_gqdifwj`, same Gmail account as `cennik-www`):
+- `EMAILJS_TEMPLATE_ID = 'template_2tli8yz'` — "Zgłoś problem" (🚩 button in header, opens
+  `problemOverlay`): imię/restauracja auto-filled read-only from the saved identity above, only
+  the message is typed. Goes to the admin's inbox.
+- `EMAILJS_ZAMOWIENIA_TEMPLATE_ID = 'template_vu215cg'` — order-send: a "Wyślij" button next to
+  "Kopiuj" (share-btn, paper-plane SVG icon) appears **only** on the Kuchnia Centralna basket
+  card in the drawer. Subject `ZAMÓWIENIE RESTAURACJA <restauracja>`, body = the same order text
+  as "Kopiuj", sent to `zamowienia@nasze-domowe.pl`. On success: clears **only that supplier's**
+  basket automatically (prevents double-send) and shows a toast. "Kopiuj" (unchanged, all
+  suppliers) never auto-clears — manual clear only, by user request.
+- Both templates configured at dashboard.emailjs.com (same account). If either needs changing,
+  the account owner edits it there (Claude has no browser session logged into that account) —
+  walk them through it live rather than guessing template field names.
+
+**Known bug pattern to watch for**: `data-key="` + a canonical key **must** go through `escAttr()`
+(HTML-escapes `&`/`"`) before being written into the `data-key` attribute — a product name
+containing a literal `"` (e.g. `BAGIETKA 30"`, an inch mark) breaks the attribute and makes
+`groupEl.getAttribute('data-key')` return a truncated string that matches no group, throwing
+`Cannot read properties of undefined (reading 'product')` on every "+" click for that search
+result set. Found and fixed 2026-09-17 (commit `548d9dd`) — if a similar "+"-button-does-nothing
+bug resurfaces, check this first before anything else.
+
+**`.drawer-overlay` must stay `position:fixed`, never `absolute`** — `absolute` makes it stretch
+to the height of the whole document (which grows with search-result count), pushing
+"Wyczyść koszyki" down by however many cards are rendered behind it instead of sitting right
+under the actual basket contents. Fixed 2026-09-17 (commit `72e952c`).
+
 ## Two view modes in the app
 
 - **Search mode** (default): free-text search across all products, results as stacked cards
