@@ -442,7 +442,7 @@ footer b{ color:var(--text); }
 
     <div class="search-wrap">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="searchInput" placeholder="Szukaj produktu, np. filet z kurczaka" value="filet kurczak" autocomplete="off">
+      <input type="text" id="searchInput" placeholder="Szukaj produktu, np. filet z kurczaka" value="" autocomplete="off">
     </div>
 
     <div class="category-pills" id="categoryPills">
@@ -855,7 +855,7 @@ footer b{ color:var(--text); }
     mode: 'search',        // 'search' | 'category'
     category: null,        // 'meat' | 'veg' — tryb "Porównaj mięso/warzywa" (osobny mechanizm)
     categoryFilter: null,  // null | 'meat' | 'veg' — pigułki nad wynikami wyszukiwania (#categoryPills)
-    query: 'filet kurczak',
+    query: '',
     basket: {}             // { supplier: { "product||qualifier": {name, qualifier, qty, price} } }
   };
 
@@ -1228,9 +1228,23 @@ footer b{ color:var(--text); }
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>' +
     'Wróć do wyszukiwarki</button>';
 
+  function startPromptHtml(){
+    return (
+      '<div class="empty-state">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+        '<h2>Wpisz nazwę produktu, aby wyszukać</h2>' +
+      '</div>'
+    );
+  }
+
   function render(){
     var compareMode = state.mode === 'category';
-    var groups = compareMode ? [] : getFilteredProducts();
+    // Pusta fraza (i brak filtra Mięso/Warzywa) - pokaż zachętę do wpisania frazy zamiast
+    // listy WSZYSTKICH ~990 produktów naraz (productMatchesQuery zwraca true dla pustej
+    // frazy) - tak samo jak strona cennik-www. Start apki był wcześniej na sztywno wypełniony
+    // frazą "filet kurczak" właśnie żeby to ominąć - zmienione 2026-09-17 na prośbę usera.
+    var showStartPrompt = !compareMode && !state.query.trim() && !state.categoryFilter;
+    var groups = (compareMode || showStartPrompt) ? [] : getFilteredProducts();
     var offerCount = groups.reduce(function(n,g){ return n + g.offers.length; }, 0);
     var title, metaCount, showBack;
     var compareData = compareMode ? COMPARE_DATA[state.category] : null;
@@ -1245,7 +1259,7 @@ footer b{ color:var(--text); }
       showBack = true;
     } else {
       title = 'Wyniki wyszukiwania';
-      metaCount = groups.length + ' produkty &middot; ' + offerCount + ' ofert';
+      metaCount = showStartPrompt ? '' : (groups.length + ' produkty &middot; ' + offerCount + ' ofert');
       showBack = false;
     }
 
@@ -1255,6 +1269,8 @@ footer b{ color:var(--text); }
     html += '<main>';
     if(compareMode){
       html += compareTableHtml(state.category, state.region);
+    } else if(showStartPrompt){
+      html += startPromptHtml();
     } else if(groups.length === 0){
       html += emptyStateHtml();
     } else {
