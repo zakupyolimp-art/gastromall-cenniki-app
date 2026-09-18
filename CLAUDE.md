@@ -30,7 +30,11 @@ repo `cennik-www`) — events distinguishable by `page_location`. Events tracked
 - `EMAILJS_ZAMOWIENIA_TEMPLATE_ID = 'template_vu215cg'` — order-send: a "Wyślij" button next to
   "Kopiuj" (share-btn, paper-plane SVG icon) appears **only** on the Kuchnia Centralna basket
   card in the drawer. Subject `ZAMÓWIENIE RESTAURACJA <restauracja>`, body = the same order text
-  as "Kopiuj", sent to `zamowienia@nasze-domowe.pl`. On success: clears **only that supplier's**
+  as "Kopiuj", sent to **`bok@nasze-domowe.pl` and `zamowienianaszedomowe@gmail.com`** (changed
+  2026-09-18 from the single old address `zamowienia@nasze-domowe.pl`; recipients are set as the
+  template's own "To Email" field on dashboard.emailjs.com, comma-separated — NOT passed from
+  `index.html`, so a future recipient change is a template-only edit, no code/redeploy needed).
+  On success: clears **only that supplier's**
   basket automatically (prevents double-send) and shows a toast. "Kopiuj" (unchanged, all
   suppliers) never auto-clears — manual clear only, by user request.
 - Both templates configured at dashboard.emailjs.com (same account). If either needs changing,
