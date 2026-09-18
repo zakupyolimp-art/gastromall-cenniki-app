@@ -1425,7 +1425,7 @@ footer b{ color:var(--text); }
         '<button class="share-btn" data-copy="1"' + (keys.length === 0 ? ' disabled' : '') + '>' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>' +
         '</button>' +
-        (supplier === 'Kuchnia Centralna' ? '<button class="share-btn" data-send="1"' + (keys.length === 0 ? ' disabled' : '') + ' title="Wyślij zamówienie mailem">' +
+        (supplier === 'Kuchnia Centralna' && WYSYLKA_ZAMOWIEN_KC_WLACZONA ? '<button class="share-btn" data-send="1"' + (keys.length === 0 ? ' disabled' : '') + ' title="Wyślij zamówienie mailem">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>' +
         '</button>' : '') +
         '</div></div>';
@@ -1585,6 +1585,9 @@ footer b{ color:var(--text); }
   var EMAILJS_TEMPLATE_ID = 'template_2tli8yz';
   var EMAILJS_ZAMOWIENIA_SERVICE_ID = 'service_gqdifwj';
   var EMAILJS_ZAMOWIENIA_TEMPLATE_ID = 'template_vu215cg';
+  // Tymczasowo wyłączone (2026-09-18) na czas budowy/testów mechanizmu raportowania zamówień KC -
+  // ustaw na true, żeby przywrócić przycisk "Wyślij" w koszyku Kuchnia Centralna.
+  var WYSYLKA_ZAMOWIEN_KC_WLACZONA = false;
   if(window.emailjs) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
 
   var problemOverlay = document.getElementById('problemOverlay');
