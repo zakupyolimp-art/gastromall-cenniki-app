@@ -1062,7 +1062,7 @@ footer b{ color:var(--text); }
     var b = state.basket[supplier] || (state.basket[supplier] = {});
     var byla = b[k] ? b[k].qty : 0;
     if(qty === 0){ delete b[k]; }
-    else { b[k] = { name: product.name, qualifier: product.qualifier, note: offer.note || '', qty: qty, price: offer.price }; }
+    else { b[k] = { name: product.name, qualifier: product.qualifier, note: offer.note || '', qty: qty, price: offer.price, unit: product.unit || 'kg' }; }
     renderCartBadge();
     renderDrawer();
     if(qty > byla) sledz('dodanie_do_koszyka', { produkt: product.name, dostawca: supplier, ilosc: qty });
@@ -1435,7 +1435,7 @@ footer b{ color:var(--text); }
         keys.forEach(function(k){
           var it = items[k];
           var fullName = it.name + (it.qualifier ? ' ' + it.qualifier : '') + (it.note ? ' (' + it.note + ')' : '');
-          html += '<div class="basket-line"><span class="qty">' + it.qty + ' ' + 'kg' + '</span>' +
+          html += '<div class="basket-line"><span class="qty">' + it.qty + ' ' + (it.unit || 'kg') + '</span>' +
             '<span class="name">' + fullName + '</span>' +
             '<span class="sum">' + fmt(it.qty * it.price) + '</span></div>';
         });
@@ -1459,7 +1459,7 @@ footer b{ color:var(--text); }
         Object.keys(items).forEach(function(k){
           var it = items[k];
           var fullName = it.name + (it.qualifier ? ' ' + it.qualifier : '') + (it.note ? ' (' + it.note + ')' : '');
-          text += '• ' + it.qty + ' kg ' + fullName + ' — ' + fmt(it.qty * it.price) + '\n';
+          text += '• ' + it.qty + ' ' + (it.unit || 'kg') + ' ' + fullName + ' — ' + fmt(it.qty * it.price) + '\n';
         });
         text += 'Razem: ' + fmt(basketTotalFor(supplier));
         if(navigator.clipboard && navigator.clipboard.writeText){
@@ -1630,7 +1630,7 @@ footer b{ color:var(--text); }
     keys.forEach(function(k){
       var it = items[k];
       var fullName = it.name + (it.qualifier ? ' ' + it.qualifier : '') + (it.note ? ' (' + it.note + ')' : '');
-      wiadomosc += '• ' + it.qty + ' kg ' + fullName + ' — ' + fmt(it.qty * it.price) + '\n';
+      wiadomosc += '• ' + it.qty + ' ' + (it.unit || 'kg') + ' ' + fullName + ' — ' + fmt(it.qty * it.price) + '\n';
     });
     wiadomosc += 'Razem: ' + fmt(basketTotalFor(supplier));
     var pierwotnyTekst = btn.textContent;
